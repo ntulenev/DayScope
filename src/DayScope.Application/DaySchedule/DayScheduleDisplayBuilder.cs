@@ -102,11 +102,9 @@ public sealed class DayScheduleDisplayBuilder
         int configuredWidth,
         double? availableScheduleWidth)
     {
-        var width = configuredWidth;
-        if (availableScheduleWidth.HasValue)
-        {
-            width = (int)Math.Floor(Math.Min(configuredWidth, availableScheduleWidth.Value));
-        }
+        var width = availableScheduleWidth.HasValue
+            ? (int)Math.Floor(availableScheduleWidth.Value)
+            : configuredWidth;
 
         return Math.Max(420, width);
     }
