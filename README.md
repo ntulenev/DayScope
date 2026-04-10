@@ -67,6 +67,10 @@ dotnet build .\src\DayScope.slnx
 dotnet run --project .\src\DayScope\DayScope.csproj
 ```
 
+Example of the running app:
+
+![DayScope running app](./Screenshot_DayScope.png)
+
 ## Tray Behavior
 
 - The main window does not appear in the taskbar.
