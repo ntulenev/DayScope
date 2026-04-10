@@ -56,6 +56,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool HasSecondaryTimeZone { get; private set => SetProperty(ref field, value); }
 
+    public GridLength PrimaryTimeColumnWidth { get; private set => SetProperty(ref field, value); } = new(72);
+
     public GridLength SecondaryTimeColumnWidth { get; private set => SetProperty(ref field, value); } = new(0);
 
     public double ScheduleCanvasWidth { get; private set => SetProperty(ref field, value); } = 860;
@@ -117,7 +119,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         PrimaryTimeZoneLabel = state.PrimaryTimeZoneLabel;
         SecondaryTimeZoneLabel = state.SecondaryTimeZoneLabel;
         HasSecondaryTimeZone = !string.IsNullOrWhiteSpace(state.SecondaryTimeZoneLabel);
-        SecondaryTimeColumnWidth = HasSecondaryTimeZone ? new GridLength(52) : new GridLength(0);
+        PrimaryTimeColumnWidth = ResolveTimeColumnWidth(state.PrimaryTimeZoneLabel);
+        SecondaryTimeColumnWidth = HasSecondaryTimeZone
+            ? ResolveTimeColumnWidth(state.SecondaryTimeZoneLabel)
+            : new GridLength(0);
         ScheduleCanvasWidth = state.ScheduleCanvasWidth;
         TimelineHeight = state.TimelineHeight;
         StatusText = state.StatusText;
@@ -153,6 +158,22 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             target.Add(item);
         }
+    }
+
+    private static GridLength ResolveTimeColumnWidth(string? label)
+    {
+        const double minimumWidth = 72;
+        const double perCharacterWidth = 7.2;
+        const double horizontalPadding = 8;
+
+        var normalizedLabel = string.IsNullOrWhiteSpace(label)
+            ? string.Empty
+            : label.Trim();
+        var width = Math.Max(
+            minimumWidth,
+            Math.Ceiling((normalizedLabel.Length * perCharacterWidth) + horizontalPadding));
+
+        return new GridLength(width);
     }
 
     private readonly DayScheduleDashboardService _dashboardService;
