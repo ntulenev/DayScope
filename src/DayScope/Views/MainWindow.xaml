@@ -498,35 +498,75 @@
                                         <DataTemplate>
                                             <Border Width="{Binding Width}"
                                                     Height="{Binding Height}"
-                                                    Padding="8,6"
                                                     BorderThickness="1"
                                                     CornerRadius="8"
                                                     Cursor="Hand"
                                                     MouseLeftButtonUp="OnEventCardMouseLeftButtonUp"
-                                                    Style="{StaticResource EventCardStyle}">
+                                                    VerticalAlignment="Top">
+                                                <Border.Style>
+                                                    <Style TargetType="Border" BasedOn="{StaticResource EventCardStyle}">
+                                                        <Setter Property="Padding" Value="8,6" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsCompact}" Value="True">
+                                                                <Setter Property="Padding" Value="7,4" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsMicro}" Value="True">
+                                                                <Setter Property="Padding" Value="7,2" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
                                                 <StackPanel>
                                                     <DockPanel LastChildFill="False">
                                                         <Border DockPanel.Dock="Right"
                                                                 Padding="6,2"
                                                                 Margin="8,0,0,0"
                                                                 VerticalAlignment="Top"
-                                                                CornerRadius="6"
-                                                                Style="{StaticResource EventBadgeStyle}">
+                                                                CornerRadius="6">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border" BasedOn="{StaticResource EventBadgeStyle}">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ShowStatusBadge}" Value="False">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
                                                             <TextBlock FontFamily="{StaticResource UiFont}"
                                                                        FontSize="9"
                                                                        FontWeight="Bold"
                                                                        Foreground="White"
                                                                        Text="{Binding StatusLabel}" />
                                                         </Border>
-                                                        <TextBlock TextTrimming="CharacterEllipsis"
-                                                                   Style="{StaticResource EventTitleStyle}">
+                                                        <TextBlock TextTrimming="CharacterEllipsis">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock" BasedOn="{StaticResource EventTitleStyle}">
+                                                                    <Setter Property="FontSize" Value="13" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsCompact}" Value="True">
+                                                                            <Setter Property="FontSize" Value="12" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
                                                             <Run Text="{Binding LeadingIcon}" />
                                                             <Run Text="{Binding Title}" />
                                                         </TextBlock>
                                                     </DockPanel>
                                                     <TextBlock Margin="0,4,0,0"
-                                                               Text="{Binding ScheduleText}"
-                                                               Style="{StaticResource EventMetaStyle}" />
+                                                               Text="{Binding ScheduleText}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource EventMetaStyle}">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ShowScheduleText}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>

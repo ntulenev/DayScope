@@ -212,10 +212,14 @@ public static class DayScheduleDisplayBuilder
                 / 60d
                 * assignment.Candidate.HourHeight;
             var height = Math.Max(
-                32,
+                20,
                 (assignment.Candidate.End - assignment.Candidate.Start).TotalMinutes
                 / 60d
                 * assignment.Candidate.HourHeight);
+            var isMicro = height < 26;
+            var isCompact = columnCount > 1 || height < 52;
+            var showScheduleText = !isCompact && !isMicro;
+            var showStatusBadge = !isMicro && height >= 28 && columnWidth >= 150;
 
             return new TimedEventDisplayState(
                 assignment.Candidate.Title,
@@ -224,7 +228,10 @@ public static class DayScheduleDisplayBuilder
                 height,
                 assignment.Column * (columnWidth + gap),
                 columnWidth,
-                columnCount > 1 || height < 54,
+                isCompact,
+                isMicro,
+                showScheduleText,
+                showStatusBadge,
                 assignment.Candidate.Appearance,
                 assignment.Candidate.StatusLabel,
                 assignment.Candidate.LeadingIcon,
