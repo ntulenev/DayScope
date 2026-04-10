@@ -32,7 +32,8 @@ public static class DayScheduleDisplayBuilder
                 calendarEvent.SafeTitle,
                 MapAppearance(calendarEvent.ParticipationStatus),
                 GetStatusLabel(calendarEvent.ParticipationStatus),
-                GetLeadingIcon(calendarEvent.EventKind)))
+                GetLeadingIcon(calendarEvent.EventKind),
+                BuildEventDetails(calendarEvent, localZone)))
             .ToArray();
 
         var timedEvents = BuildTimedEvents(
@@ -226,7 +227,8 @@ public static class DayScheduleDisplayBuilder
                 columnCount > 1 || height < 54,
                 assignment.Candidate.Appearance,
                 assignment.Candidate.StatusLabel,
-                assignment.Candidate.LeadingIcon);
+                assignment.Candidate.LeadingIcon,
+                assignment.Candidate.Details);
         });
     }
 
@@ -260,7 +262,39 @@ public static class DayScheduleDisplayBuilder
             hourHeight,
             MapAppearance(calendarEvent.ParticipationStatus),
             GetStatusLabel(calendarEvent.ParticipationStatus),
-            GetLeadingIcon(calendarEvent.EventKind));
+            GetLeadingIcon(calendarEvent.EventKind),
+            BuildEventDetails(calendarEvent, TimeZoneInfo.Local));
+    }
+
+    private static EventDetailsDisplayState BuildEventDetails(
+        CalendarEvent calendarEvent,
+        TimeZoneInfo localZone)
+    {
+        var start = TimeZoneInfo.ConvertTime(calendarEvent.Start, localZone);
+        var end = TimeZoneInfo.ConvertTime(
+            calendarEvent.End ?? calendarEvent.Start.AddMinutes(30),
+            localZone);
+        var scheduleText = calendarEvent.IsAllDay
+            ? "All day"
+            : $"{start:h:mm tt}-{end:h:mm tt}"
+                .Replace(" ", string.Empty, StringComparison.Ordinal);
+
+        return new EventDetailsDisplayState(
+            calendarEvent.SafeTitle,
+            scheduleText,
+            MapAppearance(calendarEvent.ParticipationStatus),
+            GetStatusLabel(calendarEvent.ParticipationStatus),
+            GetLeadingIcon(calendarEvent.EventKind),
+            calendarEvent.OrganizerDisplayLabel,
+            NormalizeDescription(calendarEvent.Description),
+            NormalizeJoinUrl(calendarEvent.JoinUrl),
+            [
+                .. calendarEvent.Participants
+                .Select(participant => new EventParticipantDisplayState(
+                    participant.DisplayLabel,
+                    GetStatusLabel(participant.ParticipationStatus),
+                    participant.IsSelf))
+            ]);
     }
 
     private static DateTimeOffset CreateDateTimeOffset(
@@ -306,6 +340,20 @@ public static class DayScheduleDisplayBuilder
         var absoluteOffset = offset.Duration();
         return $"UTC{sign}{absoluteOffset:hh\\:mm}";
     }
+
+    private static string? NormalizeDescription(string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return null;
+        }
+
+        return description
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Trim();
+    }
+
+    private static Uri? NormalizeJoinUrl(Uri? joinUrl) => joinUrl;
 
     private static TimeZoneInfo? TryResolveTimeZone(string? timeZoneId)
     {
@@ -399,5 +447,6 @@ public static class DayScheduleDisplayBuilder
         int HourHeight,
         EventAppearance Appearance,
         string StatusLabel,
-        string LeadingIcon);
+        string LeadingIcon,
+        EventDetailsDisplayState Details);
 }

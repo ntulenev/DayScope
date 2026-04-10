@@ -4,4 +4,5 @@ public sealed record AllDayEventDisplayState(
     string Title,
     EventAppearance Appearance,
     string StatusLabel,
-    string LeadingIcon);
+    string LeadingIcon,
+    EventDetailsDisplayState Details);

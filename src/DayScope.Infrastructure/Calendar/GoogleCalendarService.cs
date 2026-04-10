@@ -77,7 +77,8 @@ public sealed class GoogleCalendarService : ICalendarService
             request.ShowDeleted = true;
             request.SingleEvents = true;
             request.Fields =
-                "items(summary,start,end,status,eventType,attendees(self,responseStatus),organizer(self))";
+                "items(summary,description,start,end,status,eventType,hangoutLink," +
+                "attendees(displayName,email,self,responseStatus),organizer(displayName,email,self))";
 
             var events = await request.ExecuteAsync(cancellationToken);
             var agendaItems = events.Items?
@@ -189,7 +190,43 @@ public sealed class GoogleCalendarService : ICalendarService
             end,
             isAllDay,
             ResolveParticipationStatus(calendarEvent),
-            ResolveEventKind(calendarEvent));
+            ResolveEventKind(calendarEvent),
+            calendarEvent.Organizer?.DisplayName,
+            calendarEvent.Organizer?.Email,
+            calendarEvent.Description,
+            ResolveJoinUrl(calendarEvent),
+            calendarEvent.Attendees?
+                .Select(MapParticipant)
+                .Where(participant => participant is not null)
+                .Cast<CalendarEventParticipant>()
+                .ToArray()
+                ?? []);
+    }
+
+    private static CalendarEventParticipant? MapParticipant(EventAttendee? attendee)
+    {
+        if (attendee is null)
+        {
+            return null;
+        }
+
+        return new CalendarEventParticipant(
+            attendee.DisplayName,
+            attendee.Email,
+            ResolveParticipationStatus(attendee.ResponseStatus),
+            attendee.Self is true);
+    }
+
+    private static CalendarParticipationStatus ResolveParticipationStatus(string? responseStatus)
+    {
+        return responseStatus?.ToUpperInvariant() switch
+        {
+            "NEEDSACTION" => CalendarParticipationStatus.AwaitingResponse,
+            "TENTATIVE" => CalendarParticipationStatus.Tentative,
+            "DECLINED" => CalendarParticipationStatus.Declined,
+            "ACCEPTED" => CalendarParticipationStatus.Accepted,
+            _ => CalendarParticipationStatus.Accepted
+        };
     }
 
     private static CalendarParticipationStatus ResolveParticipationStatus(Event calendarEvent)
@@ -206,14 +243,19 @@ public sealed class GoogleCalendarService : ICalendarService
             selfResponseStatus = "accepted";
         }
 
-        return selfResponseStatus?.ToUpperInvariant() switch
+        return ResolveParticipationStatus(selfResponseStatus);
+    }
+
+    private static Uri? ResolveJoinUrl(Event calendarEvent)
+    {
+        if (!string.IsNullOrWhiteSpace(calendarEvent.HangoutLink))
         {
-            "NEEDSACTION" => CalendarParticipationStatus.AwaitingResponse,
-            "TENTATIVE" => CalendarParticipationStatus.Tentative,
-            "DECLINED" => CalendarParticipationStatus.Declined,
-            "ACCEPTED" => CalendarParticipationStatus.Accepted,
-            _ => CalendarParticipationStatus.Accepted
-        };
+            return Uri.TryCreate(calendarEvent.HangoutLink, UriKind.Absolute, out var joinUri)
+                ? joinUri
+                : null;
+        }
+
+        return null;
     }
 
     private static bool IntersectsDay(

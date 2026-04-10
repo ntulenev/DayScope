@@ -10,4 +10,5 @@ public sealed record TimedEventDisplayState(
     bool IsCompact,
     EventAppearance Appearance,
     string StatusLabel,
-    string LeadingIcon);
+    string LeadingIcon,
+    EventDetailsDisplayState Details);

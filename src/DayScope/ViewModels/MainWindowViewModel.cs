@@ -74,6 +74,27 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool ShowNowLine { get; private set => SetProperty(ref field, value); }
 
+    public EventDetailsDisplayState? SelectedEventDetails => _selectedEventDetails;
+
+    public bool IsEventDetailsOpen => SelectedEventDetails is not null;
+
+    public bool HasSelectedEventOrganizer =>
+        !string.IsNullOrWhiteSpace(SelectedEventDetails?.Organizer);
+
+    public bool HasSelectedEventDescription =>
+        !string.IsNullOrWhiteSpace(SelectedEventDetails?.Description);
+
+    public bool HasSelectedEventParticipants =>
+        SelectedEventDetails?.Participants.Count > 0;
+
+    public bool HasSelectedEventJoinUrl =>
+        SelectedEventDetails?.JoinUrl is not null;
+
+    public string SelectedEventJoinLabel =>
+        SelectedEventDetails?.JoinUrl?.Host.Contains("meet.google.com", StringComparison.OrdinalIgnoreCase) is true
+            ? "Join Google Meet"
+            : "Open meeting link";
+
     public async Task InitializeAsync()
     {
         ApplyDisplayState(await _dashboardService.RefreshCalendarAsync(
@@ -89,6 +110,20 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     public Task RefreshNowAsync() => RefreshCalendarAsync(CalendarInteractionMode.Interactive);
+
+    public void OpenEventDetails(object? eventState)
+    {
+        var details = eventState switch
+        {
+            TimedEventDisplayState timedEvent => timedEvent.Details,
+            AllDayEventDisplayState allDayEvent => allDayEvent.Details,
+            _ => null
+        };
+
+        SetSelectedEventDetails(details);
+    }
+
+    public void CloseEventDetails() => SetSelectedEventDetails(null);
 
     public void Dispose()
     {
@@ -176,6 +211,21 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         return new GridLength(width);
     }
 
+    private void SetSelectedEventDetails(EventDetailsDisplayState? details)
+    {
+        if (!SetProperty(ref _selectedEventDetails, details, nameof(SelectedEventDetails)))
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(IsEventDetailsOpen));
+        OnPropertyChanged(nameof(HasSelectedEventOrganizer));
+        OnPropertyChanged(nameof(HasSelectedEventDescription));
+        OnPropertyChanged(nameof(HasSelectedEventParticipants));
+        OnPropertyChanged(nameof(HasSelectedEventJoinUrl));
+        OnPropertyChanged(nameof(SelectedEventJoinLabel));
+    }
+
     private readonly DayScheduleDashboardService _dashboardService;
     private readonly ObservableCollection<TimelineHourDisplayState> _primaryTimelineHoursSource = [];
     private readonly ObservableCollection<TimelineHourDisplayState> _secondaryTimelineHoursSource = [];
@@ -184,4 +234,5 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _calendarTimer;
     private double _availableScheduleWidth = 860;
+    private EventDetailsDisplayState? _selectedEventDetails;
 }

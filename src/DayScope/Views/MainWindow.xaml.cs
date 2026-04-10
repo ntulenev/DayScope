@@ -1,7 +1,9 @@
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Input;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
+using System.Diagnostics;
 
 using Microsoft.Extensions.Options;
 
@@ -60,6 +62,73 @@ public partial class MainWindow : Window
     {
         _allowClose = true;
         Close();
+    }
+
+    private void OnEventCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement element)
+        {
+            return;
+        }
+
+        _viewModel.OpenEventDetails(element.DataContext);
+        e.Handled = true;
+    }
+
+    private void OnEventDetailsOverlayMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.CloseEventDetails();
+        e.Handled = true;
+    }
+
+    private void OnCloseEventDetailsClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.CloseEventDetails();
+    }
+
+    private void OnOpenEventLinkClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SelectedEventDetails?.JoinUrl is not Uri joinUrl)
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(joinUrl.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore shell launch failures and keep the dialog open.
+        }
+        catch (Win32Exception)
+        {
+            // Ignore shell launch failures and keep the dialog open.
+        }
+    }
+
+    private void OnCopyEventLinkClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SelectedEventDetails?.JoinUrl is not Uri joinUrl)
+        {
+            return;
+        }
+
+        try
+        {
+            System.Windows.Clipboard.SetText(joinUrl.AbsoluteUri);
+        }
+        catch (COMException)
+        {
+            // Ignore clipboard access failures and keep the dialog open.
+        }
+        catch (ExternalException)
+        {
+            // Ignore clipboard access failures and keep the dialog open.
+        }
     }
 
     private void ApplyWindowSettings(WindowSettings settings)
