@@ -9,6 +9,7 @@
         MinHeight="500"
         Background="#14171B"
         ResizeMode="CanResize"
+        ShowInTaskbar="False"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Ideal"

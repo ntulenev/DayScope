@@ -86,6 +86,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    public Task RefreshNowAsync() => RefreshCalendarAsync(CalendarInteractionMode.Interactive);
+
     public void Dispose()
     {
         _clockTimer.Stop();

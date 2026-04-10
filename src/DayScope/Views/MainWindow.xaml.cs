@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
+using System.ComponentModel;
 
 using Microsoft.Extensions.Options;
 
@@ -23,18 +24,42 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         ApplyWindowSettings(windowOptions.Value);
         SourceInitialized += (_, _) => ApplyDarkTitleBar();
-        Loaded += OnLoadedAsync;
         SizeChanged += (_, _) => UpdateScheduleWidth();
+        Closing += OnClosing;
         Closed += (_, _) => _viewModel.Dispose();
     }
 
-    private async void OnLoadedAsync(object sender, RoutedEventArgs e)
+    public async Task InitializeAsync()
     {
         UpdateScheduleWidth();
         await _viewModel.InitializeAsync();
+    }
 
-        var targetOffset = Math.Max(0, _viewModel.NowLineTop - 280);
-        ScheduleScrollViewer.ScrollToVerticalOffset(targetOffset);
+    public void ShowFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        Topmost = true;
+        Topmost = false;
+        Focus();
+
+        UpdateLayout();
+        UpdateScheduleWidth();
+        ScrollScheduleToNowLine();
+    }
+
+    public void HideToTray()
+    {
+        Hide();
+    }
+
+    public Task RefreshNowAsync() => _viewModel.RefreshNowAsync();
+
+    public void CloseFromTray()
+    {
+        _allowClose = true;
+        Close();
     }
 
     private void ApplyWindowSettings(WindowSettings settings)
@@ -52,6 +77,23 @@ public partial class MainWindow : Window
             : ActualWidth - 280;
 
         _viewModel.UpdateAvailableScheduleWidth(availableWidth);
+    }
+
+    private void ScrollScheduleToNowLine()
+    {
+        var targetOffset = Math.Max(0, _viewModel.NowLineTop - 280);
+        ScheduleScrollViewer.ScrollToVerticalOffset(targetOffset);
+    }
+
+    private void OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (_allowClose)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        HideToTray();
     }
 
     private void ApplyDarkTitleBar()
@@ -79,5 +121,6 @@ public partial class MainWindow : Window
 
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
+    private bool _allowClose;
     private readonly MainWindowViewModel _viewModel;
 }
