@@ -6,9 +6,9 @@ using DayScope.Domain.Configuration;
 
 namespace DayScope.Application.DaySchedule;
 
-public sealed class DayScheduleDisplayBuilder
+public static class DayScheduleDisplayBuilder
 {
-    public DayScheduleDisplayState Build(
+    public static DayScheduleDisplayState Build(
         CalendarLoadResult loadResult,
         DayScheduleSettings settings,
         DateTimeOffset now,
@@ -77,7 +77,7 @@ public sealed class DayScheduleDisplayBuilder
             localNow.ToString("h:mm tt", _culture).Replace(" ", string.Empty, StringComparison.Ordinal));
     }
 
-    private static IReadOnlyList<TimelineHourDisplayState> BuildTimelineHours(
+    private static List<TimelineHourDisplayState> BuildTimelineHours(
         DateTimeOffset timelineStart,
         DayScheduleSettings settings,
         TimeZoneInfo zone)
@@ -333,6 +333,7 @@ public sealed class DayScheduleDisplayBuilder
         return status switch
         {
             CalendarLoadStatus.Loading => "Loading today's schedule...",
+            CalendarLoadStatus.Success => string.Empty,
             CalendarLoadStatus.Disabled => "Google Calendar is disabled in appsettings.",
             CalendarLoadStatus.ClientSecretsMissing =>
                 "Add Google OAuth client JSON to connect Google Calendar.",
@@ -354,6 +355,7 @@ public sealed class DayScheduleDisplayBuilder
     {
         return participationStatus switch
         {
+            CalendarParticipationStatus.Accepted => EventAppearance.Accepted,
             CalendarParticipationStatus.AwaitingResponse => EventAppearance.AwaitingResponse,
             CalendarParticipationStatus.Tentative => EventAppearance.Tentative,
             CalendarParticipationStatus.Declined => EventAppearance.Declined,
@@ -366,6 +368,7 @@ public sealed class DayScheduleDisplayBuilder
     {
         return participationStatus switch
         {
+            CalendarParticipationStatus.Accepted => "Confirmed",
             CalendarParticipationStatus.AwaitingResponse => "Awaiting",
             CalendarParticipationStatus.Tentative => "Maybe",
             CalendarParticipationStatus.Declined => "Declined",
@@ -378,6 +381,7 @@ public sealed class DayScheduleDisplayBuilder
     {
         return eventKind switch
         {
+            CalendarEventKind.Default => string.Empty,
             CalendarEventKind.OutOfOffice => "⛔ ",
             CalendarEventKind.FocusTime => "🎯 ",
             CalendarEventKind.WorkingLocation => "📍 ",

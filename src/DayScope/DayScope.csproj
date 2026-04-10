@@ -25,6 +25,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>calendar_78402.ico</ApplicationIcon>
+    <NoWarn>$(NoWarn);CS1591;CA1515;CA5392;IDE0058;SYSLIB1054</NoWarn>
   </PropertyGroup>
 
 </Project>

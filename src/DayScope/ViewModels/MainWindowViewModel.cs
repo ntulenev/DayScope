@@ -56,10 +56,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool HasSecondaryTimeZone { get; private set => SetProperty(ref field, value); }
 
-    public GridLength SecondaryTimeColumnWidth
-    {
-        get; private set => SetProperty(ref field, value);
-    } = new(0);
+    public GridLength SecondaryTimeColumnWidth { get; private set => SetProperty(ref field, value); } = new(0);
 
     public double ScheduleCanvasWidth { get; private set => SetProperty(ref field, value); } = 860;
 

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
 using DayScope.Application.Dashboard;
-using DayScope.Application.DaySchedule;
 
 namespace DayScope.Application.DependencyInjection;
 
@@ -12,7 +11,6 @@ public static class ApplicationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         return services
-            .AddSingleton<DayScheduleDisplayBuilder>()
             .AddSingleton<DayScheduleDashboardService>();
     }
 }

@@ -12,19 +12,16 @@ public sealed class DayScheduleDashboardService
     public DayScheduleDashboardService(
         IClockService clockService,
         ICalendarService calendarService,
-        DayScheduleDisplayBuilder displayBuilder,
         IOptions<DayScheduleSettings> scheduleOptions,
         IOptions<GoogleCalendarSettings> googleCalendarOptions)
     {
         ArgumentNullException.ThrowIfNull(clockService);
         ArgumentNullException.ThrowIfNull(calendarService);
-        ArgumentNullException.ThrowIfNull(displayBuilder);
         ArgumentNullException.ThrowIfNull(scheduleOptions);
         ArgumentNullException.ThrowIfNull(googleCalendarOptions);
 
         _clockService = clockService;
         _calendarService = calendarService;
-        _displayBuilder = displayBuilder;
         _scheduleSettings = scheduleOptions.Value;
         _googleCalendarSettings = googleCalendarOptions.Value;
     }
@@ -35,7 +32,7 @@ public sealed class DayScheduleDashboardService
         TimeSpan.FromMinutes(_googleCalendarSettings.RefreshMinutes);
 
     public DayScheduleDisplayState GetCurrentDisplayState(double? availableScheduleWidth = null) =>
-        _displayBuilder.Build(
+        DayScheduleDisplayBuilder.Build(
             _lastLoadResult,
             _scheduleSettings,
             _clockService.Now,
@@ -72,7 +69,6 @@ public sealed class DayScheduleDashboardService
 
     private readonly IClockService _clockService;
     private readonly ICalendarService _calendarService;
-    private readonly DayScheduleDisplayBuilder _displayBuilder;
     private readonly DayScheduleSettings _scheduleSettings;
     private readonly GoogleCalendarSettings _googleCalendarSettings;
 

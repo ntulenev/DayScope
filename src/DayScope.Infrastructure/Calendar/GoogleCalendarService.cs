@@ -31,11 +31,13 @@ public sealed class GoogleCalendarService : ICalendarService
     public bool IsEnabled => _settings.Enabled;
 
     public async Task<CalendarLoadResult> GetEventsForDateAsync(
-        DateOnly date,
+        DateOnly day,
         TimeZoneInfo timeZone,
         CalendarInteractionMode interactionMode,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(timeZone);
+
         if (!IsEnabled)
         {
             return CalendarLoadResult.FromStatus(CalendarLoadStatus.Disabled);
@@ -64,8 +66,8 @@ public sealed class GoogleCalendarService : ICalendarService
                 ApplicationName = "DayScope"
             });
 
-            var startOfDay = CreateDateTimeOffset(timeZone, date, 0);
-            var startOfNextDay = CreateDateTimeOffset(timeZone, date.AddDays(1), 0);
+            var startOfDay = CreateDateTimeOffset(timeZone, day, 0);
+            var startOfNextDay = CreateDateTimeOffset(timeZone, day.AddDays(1), 0);
 
             var request = service.Events.List(_settings.CalendarId);
             request.TimeMinDateTimeOffset = startOfDay.ToUniversalTime();
@@ -204,12 +206,12 @@ public sealed class GoogleCalendarService : ICalendarService
             selfResponseStatus = "accepted";
         }
 
-        return selfResponseStatus?.ToLowerInvariant() switch
+        return selfResponseStatus?.ToUpperInvariant() switch
         {
-            "needsaction" => CalendarParticipationStatus.AwaitingResponse,
-            "tentative" => CalendarParticipationStatus.Tentative,
-            "declined" => CalendarParticipationStatus.Declined,
-            "accepted" => CalendarParticipationStatus.Accepted,
+            "NEEDSACTION" => CalendarParticipationStatus.AwaitingResponse,
+            "TENTATIVE" => CalendarParticipationStatus.Tentative,
+            "DECLINED" => CalendarParticipationStatus.Declined,
+            "ACCEPTED" => CalendarParticipationStatus.Accepted,
             _ => CalendarParticipationStatus.Accepted
         };
     }

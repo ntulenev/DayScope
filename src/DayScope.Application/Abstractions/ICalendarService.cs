@@ -7,7 +7,7 @@ public interface ICalendarService
     bool IsEnabled { get; }
 
     Task<CalendarLoadResult> GetEventsForDateAsync(
-        DateOnly date,
+        DateOnly day,
         TimeZoneInfo timeZone,
         CalendarInteractionMode interactionMode,
         CancellationToken cancellationToken);
