@@ -9,6 +9,9 @@ using System.Windows.Media;
 
 namespace DayScope.Views;
 
+/// <summary>
+/// Renders a constrained subset of HTML content into a WPF <see cref="TextBlock"/>.
+/// </summary>
 public static partial class HtmlTextBlock
 {
 #pragma warning disable IDE1006
@@ -20,18 +23,33 @@ public static partial class HtmlTextBlock
             new PropertyMetadata(null, OnHtmlChanged));
 #pragma warning restore IDE1006
 
+    /// <summary>
+    /// Gets the HTML string attached to a dependency object.
+    /// </summary>
+    /// <param name="obj">The dependency object that stores the attached value.</param>
+    /// <returns>The attached HTML content, if any.</returns>
     public static string? GetHtml(DependencyObject obj)
     {
         ArgumentNullException.ThrowIfNull(obj);
         return (string?)obj.GetValue(HtmlProperty);
     }
 
+    /// <summary>
+    /// Sets the HTML string attached to a dependency object.
+    /// </summary>
+    /// <param name="obj">The dependency object that stores the attached value.</param>
+    /// <param name="value">The HTML content to render.</param>
     public static void SetHtml(DependencyObject obj, string? value)
     {
         ArgumentNullException.ThrowIfNull(obj);
         obj.SetValue(HtmlProperty, value);
     }
 
+    /// <summary>
+    /// Re-renders attached HTML content when the attached property changes.
+    /// </summary>
+    /// <param name="dependencyObject">The object receiving the HTML content.</param>
+    /// <param name="args">The property change arguments.</param>
     private static void OnHtmlChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
     {
         if (dependencyObject is not TextBlock textBlock)
@@ -98,6 +116,12 @@ public static partial class HtmlTextBlock
         }
     }
 
+    /// <summary>
+    /// Appends pending line breaks before the next visible content fragment.
+    /// </summary>
+    /// <param name="textBlock">The target text block.</param>
+    /// <param name="pendingBreaks">The number of pending line breaks.</param>
+    /// <param name="hasVisibleContent">Whether content has already been rendered.</param>
     private static void FlushPendingBreaks(
         TextBlock textBlock,
         ref int pendingBreaks,
@@ -117,6 +141,13 @@ public static partial class HtmlTextBlock
         pendingBreaks = 0;
     }
 
+    /// <summary>
+    /// Appends an HTML anchor to the text block.
+    /// </summary>
+    /// <param name="textBlock">The target text block.</param>
+    /// <param name="href">The anchor href value.</param>
+    /// <param name="anchorText">The inner anchor text.</param>
+    /// <param name="hasVisibleContent">Whether visible content has already been rendered.</param>
     private static void AppendAnchor(
         TextBlock textBlock,
         string href,
@@ -142,6 +173,12 @@ public static partial class HtmlTextBlock
         hasVisibleContent = true;
     }
 
+    /// <summary>
+    /// Appends decoded text and automatically links plain-text URLs.
+    /// </summary>
+    /// <param name="textBlock">The target text block.</param>
+    /// <param name="text">The decoded text fragment.</param>
+    /// <param name="hasVisibleContent">Whether visible content has already been rendered.</param>
     private static void AppendTextWithAutoLinks(
         TextBlock textBlock,
         string text,
@@ -184,6 +221,12 @@ public static partial class HtmlTextBlock
         }
     }
 
+    /// <summary>
+    /// Creates a hyperlink inline for the specified URI.
+    /// </summary>
+    /// <param name="uri">The target URI.</param>
+    /// <param name="text">The hyperlink text.</param>
+    /// <returns>The hyperlink inline.</returns>
     private static Hyperlink CreateHyperlink(Uri uri, string text)
     {
         var hyperlink = new Hyperlink(new Run(text))
@@ -195,6 +238,11 @@ public static partial class HtmlTextBlock
         return hyperlink;
     }
 
+    /// <summary>
+    /// Opens hyperlink clicks through the system shell.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="args">The routed event arguments.</param>
     private static void OnHyperlinkClick(object sender, RoutedEventArgs args)
     {
         if (sender is not Hyperlink { NavigateUri: { } uri })
@@ -217,22 +265,50 @@ public static partial class HtmlTextBlock
         }
     }
 
+    /// <summary>
+    /// Decodes HTML entities and normalizes non-breaking spaces.
+    /// </summary>
+    /// <param name="text">The encoded text to decode.</param>
+    /// <returns>The decoded text.</returns>
     private static string DecodeText(string text) =>
         WebUtility.HtmlDecode(text)
             .Replace('\u00A0', ' ');
 
+    /// <summary>
+    /// Removes generic HTML tags from a fragment.
+    /// </summary>
+    /// <param name="text">The HTML fragment.</param>
+    /// <returns>The text with generic tags removed.</returns>
     private static string StripTags(string text) => GenericTagRegex().Replace(text, string.Empty);
 
+    /// <summary>
+    /// Attempts to parse a decoded absolute URI.
+    /// </summary>
+    /// <param name="value">The raw URI value.</param>
+    /// <param name="uri">The parsed URI.</param>
+    /// <returns><see langword="true"/> when parsing succeeds; otherwise <see langword="false"/>.</returns>
     private static bool TryCreateUri(string value, out Uri uri) =>
         Uri.TryCreate(WebUtility.HtmlDecode(value), UriKind.Absolute, out uri!);
 
+    /// <summary>
+    /// Gets the regex used to tokenize limited HTML fragments.
+    /// </summary>
+    /// <returns>The compiled tokenization regex.</returns>
     [GeneratedRegex(
         "(?is)(?<anchor><a\\b[^>]*href\\s*=\\s*[\"'](?<href>[^\"']+)[\"'][^>]*>(?<anchorText>.*?)</a>)|(?<break><br\\s*/?>)|(?<block></p\\s*>|</div\\s*>|</h\\d\\s*>)|(?<li><li\\b[^>]*>)|(?<tag><[^>]+>)|(?<text>[^<]+)")]
     private static partial Regex HtmlTokenRegex();
 
+    /// <summary>
+    /// Gets the regex used to detect plain-text URLs.
+    /// </summary>
+    /// <returns>The compiled URL regex.</returns>
     [GeneratedRegex("(?i)\\bhttps?://[^\\s<]+")]
     private static partial Regex UrlRegex();
 
+    /// <summary>
+    /// Gets the regex used to strip generic HTML tags.
+    /// </summary>
+    /// <returns>The compiled generic tag regex.</returns>
     [GeneratedRegex("(?is)<[^>]+>")]
     private static partial Regex GenericTagRegex();
 }

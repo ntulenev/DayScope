@@ -69,5 +69,9 @@ public sealed class ThemePreferenceStore
         "DayScope",
         "preferences.json");
 
+    /// <summary>
+    /// Represents the serialized theme preference payload.
+    /// </summary>
+    /// <param name="ThemeMode">The persisted theme mode.</param>
     private sealed record ThemePreferencesDocument(AppThemeMode ThemeMode);
 }

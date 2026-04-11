@@ -1,5 +1,8 @@
 namespace DayScope.Application.Calendar;
 
+/// <summary>
+/// Represents the status of a calendar load operation.
+/// </summary>
 public enum CalendarLoadStatus
 {
     Loading = 0,

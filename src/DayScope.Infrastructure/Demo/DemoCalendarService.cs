@@ -4,10 +4,21 @@ using DayScope.Domain.Calendar;
 
 namespace DayScope.Infrastructure.Demo;
 
+/// <summary>
+/// Provides deterministic synthetic calendar data for demo mode.
+/// </summary>
 public sealed class DemoCalendarService : ICalendarService
 {
     public bool IsEnabled => true;
 
+    /// <summary>
+    /// Returns a synthetic agenda for the requested day.
+    /// </summary>
+    /// <param name="day">The day to generate.</param>
+    /// <param name="timeZone">The time zone used to build the synthetic event times.</param>
+    /// <param name="interactionMode">The interaction mode for the request.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>A successful calendar load result containing demo events.</returns>
     public Task<CalendarLoadResult> GetEventsForDateAsync(
         DateOnly day,
         TimeZoneInfo timeZone,
@@ -24,6 +35,12 @@ public sealed class DemoCalendarService : ICalendarService
                 new CalendarAgenda(BuildEvents(day, timeZone))));
     }
 
+    /// <summary>
+    /// Builds the deterministic demo agenda for the requested day.
+    /// </summary>
+    /// <param name="day">The day to generate.</param>
+    /// <param name="timeZone">The time zone used to create event instants.</param>
+    /// <returns>The synthetic events for the day.</returns>
     private static IReadOnlyList<CalendarEvent> BuildEvents(
         DateOnly day,
         TimeZoneInfo timeZone)
@@ -306,6 +323,19 @@ public sealed class DemoCalendarService : ICalendarService
         ];
     }
 
+    /// <summary>
+    /// Creates a synthetic all-day calendar event.
+    /// </summary>
+    /// <param name="day">The day represented by the event.</param>
+    /// <param name="timeZone">The time zone used to calculate event boundaries.</param>
+    /// <param name="title">The event title.</param>
+    /// <param name="participationStatus">The signed-in user's participation status.</param>
+    /// <param name="eventKind">The synthetic event kind.</param>
+    /// <param name="description">The event description.</param>
+    /// <param name="organizerName">The organizer display name.</param>
+    /// <param name="organizerEmail">The organizer email address.</param>
+    /// <param name="participants">The event participants.</param>
+    /// <returns>The synthetic all-day event.</returns>
     private static CalendarEvent CreateAllDayEvent(
         DateOnly day,
         TimeZoneInfo timeZone,
@@ -334,6 +364,24 @@ public sealed class DemoCalendarService : ICalendarService
             participants);
     }
 
+    /// <summary>
+    /// Creates a synthetic timed calendar event.
+    /// </summary>
+    /// <param name="day">The day represented by the event.</param>
+    /// <param name="timeZone">The time zone used to calculate event instants.</param>
+    /// <param name="title">The event title.</param>
+    /// <param name="startHour">The local start hour.</param>
+    /// <param name="startMinute">The local start minute.</param>
+    /// <param name="endHour">The local end hour.</param>
+    /// <param name="endMinute">The local end minute.</param>
+    /// <param name="participationStatus">The signed-in user's participation status.</param>
+    /// <param name="eventKind">The synthetic event kind.</param>
+    /// <param name="description">The event description.</param>
+    /// <param name="organizerName">The organizer display name.</param>
+    /// <param name="organizerEmail">The organizer email address.</param>
+    /// <param name="participants">The event participants.</param>
+    /// <param name="joinPath">The optional relative meeting path used to build a demo join URL.</param>
+    /// <returns>The synthetic timed event.</returns>
     private static CalendarEvent CreateTimedEvent(
         DateOnly day,
         TimeZoneInfo timeZone,
@@ -364,6 +412,14 @@ public sealed class DemoCalendarService : ICalendarService
             participants);
     }
 
+    /// <summary>
+    /// Creates a local instant for the requested day and time in the given time zone.
+    /// </summary>
+    /// <param name="day">The local day.</param>
+    /// <param name="timeZone">The time zone that defines the offset.</param>
+    /// <param name="hour">The local hour.</param>
+    /// <param name="minute">The local minute.</param>
+    /// <returns>The resulting instant.</returns>
     private static DateTimeOffset At(
         DateOnly day,
         TimeZoneInfo timeZone,
@@ -374,6 +430,11 @@ public sealed class DemoCalendarService : ICalendarService
         return new DateTimeOffset(localDateTime, timeZone.GetUtcOffset(localDateTime));
     }
 
+    /// <summary>
+    /// Builds a deterministic demo meeting URI from a relative path.
+    /// </summary>
+    /// <param name="joinPath">The relative meeting path.</param>
+    /// <returns>The demo join URI, or <see langword="null"/> when no path is supplied.</returns>
     private static Uri? BuildJoinUri(string? joinPath)
     {
         if (string.IsNullOrWhiteSpace(joinPath))
@@ -384,21 +445,50 @@ public sealed class DemoCalendarService : ICalendarService
         return new Uri($"https://example.com/meet/{joinPath.Trim()}", UriKind.Absolute);
     }
 
+    /// <summary>
+    /// Packs the supplied participants into an immutable-friendly list for synthetic events.
+    /// </summary>
+    /// <param name="participants">The participants to include.</param>
+    /// <returns>The participant list.</returns>
     private static IReadOnlyList<CalendarEventParticipant> Participants(
         params CalendarEventParticipant[] participants) => participants;
 
+    /// <summary>
+    /// Creates the signed-in user participant in the accepted state.
+    /// </summary>
+    /// <returns>The synthetic participant.</returns>
     private static CalendarEventParticipant SelfAccepted() =>
         Participant("Engineering Lead", "lead@example.com", CalendarParticipationStatus.Accepted, isSelf: true);
 
+    /// <summary>
+    /// Creates the signed-in user participant in the awaiting-response state.
+    /// </summary>
+    /// <returns>The synthetic participant.</returns>
     private static CalendarEventParticipant SelfAwaiting() =>
         Participant("Engineering Lead", "lead@example.com", CalendarParticipationStatus.AwaitingResponse, isSelf: true);
 
+    /// <summary>
+    /// Creates the signed-in user participant in the tentative state.
+    /// </summary>
+    /// <returns>The synthetic participant.</returns>
     private static CalendarEventParticipant SelfTentative() =>
         Participant("Engineering Lead", "lead@example.com", CalendarParticipationStatus.Tentative, isSelf: true);
 
+    /// <summary>
+    /// Creates the signed-in user participant in the declined state.
+    /// </summary>
+    /// <returns>The synthetic participant.</returns>
     private static CalendarEventParticipant SelfDeclined() =>
         Participant("Engineering Lead", "lead@example.com", CalendarParticipationStatus.Declined, isSelf: true);
 
+    /// <summary>
+    /// Creates a synthetic participant model for demo events.
+    /// </summary>
+    /// <param name="displayName">The participant display name.</param>
+    /// <param name="email">The participant email address.</param>
+    /// <param name="participationStatus">The participant response status.</param>
+    /// <param name="isSelf">Whether the participant represents the signed-in user.</param>
+    /// <returns>The synthetic participant.</returns>
     private static CalendarEventParticipant Participant(
         string displayName,
         string email,

@@ -88,6 +88,11 @@ public sealed class ThemeManager : IDisposable
         _preferenceStore = preferenceStore;
     }
 
+    /// <summary>
+    /// Reapplies the OS-selected theme when Windows theme preferences change.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The preference change arguments.</param>
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
     {
         if (SelectedMode != AppThemeMode.Os)
@@ -103,6 +108,10 @@ public sealed class ThemeManager : IDisposable
         application.Dispatcher.Invoke(() => ApplyTheme(force: false));
     }
 
+    /// <summary>
+    /// Applies the currently selected theme to the application resources.
+    /// </summary>
+    /// <param name="force">Whether the theme should be applied even when unchanged.</param>
     private void ApplyTheme(bool force)
     {
         if (System.Windows.Application.Current is not { Resources: var resources })
@@ -140,6 +149,10 @@ public sealed class ThemeManager : IDisposable
         ThemeChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Resolves the effective theme after considering OS mode and explicit selection.
+    /// </summary>
+    /// <returns>The theme that should be applied.</returns>
     private EffectiveTheme ResolveEffectiveTheme()
     {
         return SelectedMode switch
@@ -153,6 +166,10 @@ public sealed class ThemeManager : IDisposable
         };
     }
 
+    /// <summary>
+    /// Resolves the current Windows app theme preference.
+    /// </summary>
+    /// <returns>The effective theme derived from Windows settings.</returns>
     private static EffectiveTheme ResolveOsTheme()
     {
         try
@@ -181,6 +198,9 @@ public sealed class ThemeManager : IDisposable
     private EffectiveTheme _effectiveTheme = EffectiveTheme.Dark;
     private bool _isInitialized;
 
+    /// <summary>
+    /// Represents the concrete resource dictionary theme applied to the app.
+    /// </summary>
     private enum EffectiveTheme
     {
         Light = 0,
