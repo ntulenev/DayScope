@@ -12,6 +12,7 @@ public static class DayScheduleDisplayBuilder
         CalendarLoadResult loadResult,
         DayScheduleSettings settings,
         DateTimeOffset now,
+        DateOnly selectedDate,
         double? availableScheduleWidth = null)
     {
         ArgumentNullException.ThrowIfNull(loadResult);
@@ -19,9 +20,11 @@ public static class DayScheduleDisplayBuilder
 
         var localZone = TimeZoneInfo.Local;
         var localNow = TimeZoneInfo.ConvertTime(now, localZone);
-        var date = DateOnly.FromDateTime(localNow.DateTime);
-        var timelineStart = CreateDateTimeOffset(localZone, date, settings.StartHour);
-        var timelineEnd = CreateDateTimeOffset(localZone, date, settings.EndHour);
+        var today = DateOnly.FromDateTime(localNow.DateTime);
+        var dateDisplay = selectedDate.ToDateTime(TimeOnly.MinValue);
+        var labelReferenceInstant = CreateDateTimeOffset(localZone, selectedDate, 12);
+        var timelineStart = CreateDateTimeOffset(localZone, selectedDate, settings.StartHour);
+        var timelineEnd = CreateDateTimeOffset(localZone, selectedDate, settings.EndHour);
         var timelineHeight = (settings.EndHour - settings.StartHour) * settings.HourHeight;
         var secondaryZone = TryResolveTimeZone(settings.SecondaryTimeZoneId);
         var scheduleWidth = ResolveScheduleWidth(settings.ScheduleCanvasWidth, availableScheduleWidth);
@@ -44,27 +47,29 @@ public static class DayScheduleDisplayBuilder
             settings.HourHeight)
             .ToArray();
 
-        var statusText = GetStatusText(loadResult.Status);
+        var statusText = GetStatusText(loadResult.Status, selectedDate == today);
         if (loadResult.Status == CalendarLoadStatus.Success &&
             allDayEvents.Length == 0 &&
             timedEvents.Length == 0)
         {
-            statusText = "No events scheduled for today.";
+            statusText = selectedDate == today
+                ? "No events scheduled for today."
+                : "No events scheduled for this day.";
         }
 
         return new DayScheduleDisplayState(
-            date,
-            localNow.ToString("MMMM yyyy", _culture),
-            localNow.ToString("ddd", _culture),
-            localNow.ToString("%d", _culture),
-            localNow.ToString("dddd, d MMMM", _culture),
-            ResolveTimeZoneLabel(localZone, settings.PrimaryTimeZoneLabel, localNow),
+            selectedDate,
+            dateDisplay.ToString("MMMM yyyy", _culture),
+            dateDisplay.ToString("ddd", _culture),
+            selectedDate.ToString("%d", _culture),
+            dateDisplay.ToString("dddd, d MMMM", _culture),
+            ResolveTimeZoneLabel(localZone, settings.PrimaryTimeZoneLabel, labelReferenceInstant),
             secondaryZone is null
                 ? null
                 : ResolveTimeZoneLabel(
                     secondaryZone,
                     settings.SecondaryTimeZoneLabel,
-                    TimeZoneInfo.ConvertTime(now, secondaryZone)),
+                    TimeZoneInfo.ConvertTime(labelReferenceInstant, secondaryZone)),
             BuildTimelineHours(timelineStart, settings, localZone),
             secondaryZone is null
                 ? []
@@ -75,7 +80,7 @@ public static class DayScheduleDisplayBuilder
             timelineHeight,
             statusText,
             !string.IsNullOrWhiteSpace(statusText),
-            TryBuildNowLine(localNow, timelineStart, timelineEnd, settings.HourHeight),
+            TryBuildNowLine(localNow, selectedDate, timelineStart, timelineEnd, settings.HourHeight),
             localNow.ToString("h:mm tt", _culture).Replace(" ", string.Empty, StringComparison.Ordinal));
     }
 
@@ -321,11 +326,14 @@ public static class DayScheduleDisplayBuilder
 
     private static double? TryBuildNowLine(
         DateTimeOffset localNow,
+        DateOnly selectedDate,
         DateTimeOffset timelineStart,
         DateTimeOffset timelineEnd,
         int hourHeight)
     {
-        if (localNow < timelineStart || localNow > timelineEnd)
+        if (selectedDate != DateOnly.FromDateTime(localNow.DateTime) ||
+            localNow < timelineStart ||
+            localNow > timelineEnd)
         {
             return null;
         }
@@ -384,22 +392,30 @@ public static class DayScheduleDisplayBuilder
         }
     }
 
-    private static string GetStatusText(CalendarLoadStatus status)
+    private static string GetStatusText(
+        CalendarLoadStatus status,
+        bool isToday)
     {
         return status switch
         {
-            CalendarLoadStatus.Loading => "Loading today's schedule...",
+            CalendarLoadStatus.Loading => isToday
+                ? "Loading today's schedule..."
+                : "Loading schedule...",
             CalendarLoadStatus.Success => string.Empty,
             CalendarLoadStatus.Disabled => "Google Calendar is disabled in appsettings.",
             CalendarLoadStatus.ClientSecretsMissing =>
                 "Add Google OAuth client JSON to connect Google Calendar.",
             CalendarLoadStatus.AuthorizationRequired =>
-                "Google Calendar sign-in is required to show today's schedule.",
+                isToday
+                    ? "Google Calendar sign-in is required to show today's schedule."
+                    : "Google Calendar sign-in is required to show this day's schedule.",
             CalendarLoadStatus.AccessDenied =>
                 "Calendar not found or access denied.",
             CalendarLoadStatus.Unavailable =>
                 "Google Calendar is unavailable right now.",
-            CalendarLoadStatus.NoEvents => "No events scheduled for today.",
+            CalendarLoadStatus.NoEvents => isToday
+                ? "No events scheduled for today."
+                : "No events scheduled for this day.",
             _ => string.Empty
         };
     }

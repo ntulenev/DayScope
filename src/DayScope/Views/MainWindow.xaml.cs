@@ -106,6 +106,18 @@ public partial class MainWindow : Window
         OpenUri(_viewModel.GoogleCalendarUri);
     }
 
+    private async void OnPreviousDayClickAsync(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.NavigateDaysAsync(-1);
+        ScrollScheduleToNowLine();
+    }
+
+    private async void OnNextDayClickAsync(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.NavigateDaysAsync(1);
+        ScrollScheduleToNowLine();
+    }
+
     private void OnCopyEventLinkClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel.SelectedEventDetails?.JoinUrl is not Uri joinUrl)

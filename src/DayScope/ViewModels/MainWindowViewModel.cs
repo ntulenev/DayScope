@@ -140,6 +140,19 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public Task RefreshNowAsync() => RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
+    public async Task NavigateDaysAsync(int dayOffset)
+    {
+        if (dayOffset == 0)
+        {
+            return;
+        }
+
+        CloseEventDetails();
+        _dashboardService.ShiftSelectedDate(dayOffset);
+        ApplyDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
+        await RefreshDashboardAsync(CalendarInteractionMode.Interactive);
+    }
+
     public void OpenEventDetails(object? eventState)
     {
         var details = eventState switch

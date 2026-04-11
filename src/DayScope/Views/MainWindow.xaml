@@ -242,6 +242,14 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <Style x:Key="HeaderNavButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource HeaderShortcutButtonStyle}">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
@@ -272,46 +280,76 @@
                            Text="{Binding DateText}" />
             </StackPanel>
 
-            <Button Grid.Column="1"
-                    Height="48"
-                    Padding="14,5"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    ToolTip="Open Google Calendar"
-                    Style="{StaticResource HeaderShortcutButtonStyle}"
-                    Click="OnOpenGoogleCalendarClick">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="10" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0"
-                               VerticalAlignment="Center"
-                               FontFamily="{StaticResource UiFont}"
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <Button Margin="0,0,10,0"
+                        ToolTip="Previous day"
+                        Style="{StaticResource HeaderNavButtonStyle}"
+                        Click="OnPreviousDayClickAsync">
+                    <TextBlock FontFamily="{StaticResource UiFont}"
                                FontSize="16"
                                FontWeight="Bold"
-                               Foreground="#F5F7FA"
-                               Text="{Binding DayTitle}" />
+                               Foreground="#E3EBF4"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Text="&lt;" />
+                </Button>
 
-                    <Border Grid.Column="2"
-                            Width="22"
-                            Height="30"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Background="#F46556"
-                            CornerRadius="8">
-                        <TextBlock FontFamily="{StaticResource UiFont}"
-                                   FontSize="12"
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center"
+                <Button Height="48"
+                        Padding="14,5"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        ToolTip="Open Google Calendar"
+                        Style="{StaticResource HeaderShortcutButtonStyle}"
+                        Click="OnOpenGoogleCalendarClick">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
                                    VerticalAlignment="Center"
-                                   Text="{Binding DayNumberText}" />
-                    </Border>
-                </Grid>
-            </Button>
+                                   FontFamily="{StaticResource UiFont}"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="#F5F7FA"
+                                   Text="{Binding DayTitle}" />
+
+                        <Border Grid.Column="2"
+                                Width="22"
+                                Height="30"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="#F46556"
+                                CornerRadius="8">
+                            <TextBlock FontFamily="{StaticResource UiFont}"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding DayNumberText}" />
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Margin="10,0,0,0"
+                        ToolTip="Next day"
+                        Style="{StaticResource HeaderNavButtonStyle}"
+                        Click="OnNextDayClickAsync">
+                    <TextBlock FontFamily="{StaticResource UiFont}"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="#E3EBF4"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Text="&gt;" />
+                </Button>
+            </StackPanel>
 
             <Button Grid.Column="2"
                     HorizontalAlignment="Right"
@@ -762,7 +800,7 @@
                                        FontSize="14"
                                        FontWeight="Bold"
                                        Foreground="#D9E3EC"
-                                       Text="×"
+                                       Text="Г—"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center" />
                         </Button>

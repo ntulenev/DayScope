@@ -24,6 +24,7 @@ public sealed class DayScheduleDashboardService
         _calendarService = calendarService;
         _scheduleSettings = scheduleOptions.Value;
         _googleCalendarSettings = googleCalendarOptions.Value;
+        _selectedDate = DateOnly.FromDateTime(_clockService.Now.LocalDateTime);
     }
 
     public bool IsCalendarEnabled => _calendarService.IsEnabled;
@@ -36,7 +37,19 @@ public sealed class DayScheduleDashboardService
             _lastLoadResult,
             _scheduleSettings,
             _clockService.Now,
+            _selectedDate,
             availableScheduleWidth);
+
+    public void ShiftSelectedDate(int dayOffset)
+    {
+        if (dayOffset == 0)
+        {
+            return;
+        }
+
+        _selectedDate = _selectedDate.AddDays(dayOffset);
+        _lastLoadResult = CalendarLoadResult.FromStatus(CalendarLoadStatus.Loading);
+    }
 
     public async Task<DayScheduleDisplayState> RefreshCalendarAsync(
         CalendarInteractionMode interactionMode,
@@ -52,9 +65,8 @@ public sealed class DayScheduleDashboardService
 
         try
         {
-            var localDate = DateOnly.FromDateTime(_clockService.Now.LocalDateTime);
             _lastLoadResult = await _calendarService.GetEventsForDateAsync(
-                localDate,
+                _selectedDate,
                 TimeZoneInfo.Local,
                 interactionMode,
                 cancellationToken);
@@ -74,5 +86,6 @@ public sealed class DayScheduleDashboardService
 
     private CalendarLoadResult _lastLoadResult =
         CalendarLoadResult.FromStatus(CalendarLoadStatus.Loading);
+    private DateOnly _selectedDate;
     private bool _isRefreshing;
 }
