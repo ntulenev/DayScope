@@ -4,8 +4,17 @@ using System.Text.Json.Serialization;
 
 namespace DayScope.Themes;
 
+/// <summary>
+/// Persists the user's selected application theme in local app data.
+/// </summary>
 public sealed class ThemePreferenceStore
 {
+    /// <summary>
+    /// Loads the last saved theme mode.
+    /// </summary>
+    /// <returns>
+    /// The saved theme mode, or <see cref="AppThemeMode.Os"/> when no preference is available.
+    /// </returns>
     public AppThemeMode LoadThemeMode()
     {
         try
@@ -25,6 +34,10 @@ public sealed class ThemePreferenceStore
         }
     }
 
+    /// <summary>
+    /// Saves the selected theme mode for future launches.
+    /// </summary>
+    /// <param name="themeMode">The theme mode to persist.</param>
     public void SaveThemeMode(AppThemeMode themeMode)
     {
         try

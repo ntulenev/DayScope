@@ -1,10 +1,32 @@
 namespace DayScope.Themes;
 
+/// <summary>
+/// Defines the available visual theme modes for the application.
+/// </summary>
 public enum AppThemeMode
 {
+    /// <summary>
+    /// Follows the current Windows app theme preference.
+    /// </summary>
     Os = 0,
+
+    /// <summary>
+    /// Uses the light DayScope palette.
+    /// </summary>
     Light = 1,
+
+    /// <summary>
+    /// Uses the default dark DayScope palette.
+    /// </summary>
     Dark = 2,
+
+    /// <summary>
+    /// Uses the muted forest-inspired dark palette.
+    /// </summary>
     Forest = 3,
+
+    /// <summary>
+    /// Uses the dark pink bordo-inspired palette.
+    /// </summary>
     DarkPink = 4
 }

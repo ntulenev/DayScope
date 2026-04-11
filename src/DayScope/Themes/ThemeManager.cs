@@ -6,14 +6,29 @@ using Microsoft.Win32;
 
 namespace DayScope.Themes;
 
+/// <summary>
+/// Applies the active application theme and reacts to theme mode changes.
+/// </summary>
 public sealed class ThemeManager : IDisposable
 {
+    /// <summary>
+    /// Raised after the active theme resources have been updated.
+    /// </summary>
     public event EventHandler? ThemeChanged;
 
+    /// <summary>
+    /// Gets the theme mode selected by the user.
+    /// </summary>
     public AppThemeMode SelectedMode { get; private set; } = AppThemeMode.Os;
 
+    /// <summary>
+    /// Gets a value indicating whether the currently applied theme should use dark window chrome.
+    /// </summary>
     public bool IsDarkTheme => _effectiveTheme != EffectiveTheme.Light;
 
+    /// <summary>
+    /// Initializes the theme manager and applies the persisted theme selection.
+    /// </summary>
     public void Initialize()
     {
         if (_isInitialized)
@@ -27,6 +42,10 @@ public sealed class ThemeManager : IDisposable
         _isInitialized = true;
     }
 
+    /// <summary>
+    /// Updates the selected theme mode and applies its resources.
+    /// </summary>
+    /// <param name="themeMode">The theme mode to activate.</param>
     public void SetThemeMode(AppThemeMode themeMode)
     {
         if (!_isInitialized)
@@ -44,6 +63,9 @@ public sealed class ThemeManager : IDisposable
         ApplyTheme(force: true);
     }
 
+    /// <summary>
+    /// Stops listening for system theme changes.
+    /// </summary>
     public void Dispose()
     {
         if (!_isInitialized)
@@ -55,6 +77,10 @@ public sealed class ThemeManager : IDisposable
         _isInitialized = false;
     }
 
+    /// <summary>
+    /// Creates a theme manager that uses the provided preference store.
+    /// </summary>
+    /// <param name="preferenceStore">The store used to load and save the selected theme.</param>
     public ThemeManager(ThemePreferenceStore preferenceStore)
     {
         ArgumentNullException.ThrowIfNull(preferenceStore);
