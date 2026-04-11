@@ -98,7 +98,7 @@ public partial class MainWindow : Window
 
     private void OnOpenUnreadEmailsClick(object sender, RoutedEventArgs e)
     {
-        OpenUri(_gmailInboxUri);
+        OpenUri(_viewModel.UnreadEmailInboxUri);
     }
 
     private void OnCopyEventLinkClick(object sender, RoutedEventArgs e)
@@ -201,7 +201,6 @@ public partial class MainWindow : Window
         int cbAttribute);
 
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-    private static readonly Uri _gmailInboxUri = new("https://mail.google.com/mail/");
 
     private bool _allowClose;
     private readonly MainWindowViewModel _viewModel;

@@ -4,7 +4,12 @@ public interface IEmailInboxService
 {
     bool IsEnabled { get; }
 
-    Task<int?> GetUnreadEmailCountAsync(
+    Task<EmailInboxSnapshot> GetInboxSnapshotAsync(
         bool allowInteractiveAuthentication,
         CancellationToken cancellationToken);
 }
+
+public sealed record EmailInboxSnapshot(
+    int? UnreadCount,
+    string? EmailAddress,
+    Uri InboxUri);

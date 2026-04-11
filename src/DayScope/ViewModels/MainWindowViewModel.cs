@@ -82,6 +82,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public int? UnreadEmailCount => _unreadEmailCount;
 
+    public Uri UnreadEmailInboxUri => _unreadEmailInboxUri;
+
     public string UnreadEmailCountText => _unreadEmailCount switch
     {
         null => "--",
@@ -250,9 +252,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         bool allowInteractiveAuthentication,
         CancellationToken cancellationToken)
     {
-        SetUnreadEmailCount(await _emailInboxService.GetUnreadEmailCountAsync(
+        var inboxSnapshot = await _emailInboxService.GetInboxSnapshotAsync(
             allowInteractiveAuthentication,
-            cancellationToken));
+            cancellationToken);
+
+        SetUnreadEmailCount(inboxSnapshot.UnreadCount);
+        SetUnreadEmailInboxUri(inboxSnapshot.InboxUri);
     }
 
     private void SetUnreadEmailCount(int? unreadEmailCount)
@@ -265,6 +270,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(UnreadEmailCountText));
         OnPropertyChanged(nameof(HasUnreadEmails));
         OnPropertyChanged(nameof(UnreadEmailSummaryText));
+    }
+
+    private void SetUnreadEmailInboxUri(Uri inboxUri)
+    {
+        ArgumentNullException.ThrowIfNull(inboxUri);
+
+        if (!SetProperty(ref _unreadEmailInboxUri, inboxUri, nameof(UnreadEmailInboxUri)))
+        {
+            return;
+        }
     }
 
     private void SetSelectedEventDetails(EventDetailsDisplayState? details)
@@ -292,5 +307,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _calendarTimer;
     private double _availableScheduleWidth = 860;
     private int? _unreadEmailCount;
+    private Uri _unreadEmailInboxUri = new("https://mail.google.com/mail/", UriKind.Absolute);
     private EventDetailsDisplayState? _selectedEventDetails;
 }
