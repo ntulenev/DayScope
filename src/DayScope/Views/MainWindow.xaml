@@ -166,6 +166,7 @@
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="Background" Value="{DynamicResource PrimaryActionBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource PrimaryActionBrush}" />
@@ -199,6 +200,7 @@
 
         <Style x:Key="HeaderShortcutButtonStyle" TargetType="Button">
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Background" Value="{DynamicResource HeaderSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -792,6 +794,7 @@
                         <Button Grid.Column="1"
                                 Width="30"
                                 Height="30"
+                                FocusVisualStyle="{x:Null}"
                                 Background="{DynamicResource CloseButtonBackgroundBrush}"
                                 BorderBrush="{DynamicResource CloseButtonBorderBrush}"
                                 BorderThickness="1"
@@ -801,7 +804,7 @@
                                        FontSize="14"
                                        FontWeight="Bold"
                                        Foreground="{DynamicResource CloseButtonTextBrush}"
-                                       Text="Р“вЂ”"
+                                       Text="X"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center" />
                         </Button>
@@ -809,6 +812,8 @@
 
                     <ScrollViewer Grid.Row="1"
                                   Margin="0,18,0,0"
+                                  Focusable="False"
+                                  FocusVisualStyle="{x:Null}"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <StackPanel Margin="0,0,0,16"

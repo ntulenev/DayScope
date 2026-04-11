@@ -94,9 +94,23 @@ dotnet build .\src\DayScope.slnx
 dotnet run --project .\src\DayScope\DayScope.csproj
 ```
 
-Example of the running app:
+Example screenshots:
 
-![DayScope running app](./Screenshot_DayScope.png)
+Forest theme main window
+
+![Forest theme main window](./DayScope_1.png)
+
+Forest theme event details
+
+![Forest theme event details](./DayScope_2.png)
+
+Tray menu
+
+![DayScope tray menu](./DayScope_3.png)
+
+Dark Pink theme main window
+
+![Dark Pink theme main window](./DayScope_4.png)
 
 ## UI Shortcuts
 

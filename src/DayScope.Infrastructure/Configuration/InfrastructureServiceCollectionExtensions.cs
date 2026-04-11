@@ -6,6 +6,7 @@ using DayScope.Application.Abstractions;
 using DayScope.Domain.Configuration;
 using DayScope.Infrastructure.Calendar;
 using DayScope.Infrastructure.Clock;
+using DayScope.Infrastructure.Demo;
 using DayScope.Infrastructure.Google;
 using DayScope.Infrastructure.Mail;
 
@@ -28,6 +29,9 @@ public static class InfrastructureServiceCollectionExtensions
             .Bind(configuration.GetSection("Window"))
             .ValidateOnStart();
 
+        services.AddOptions<DemoModeSettings>()
+            .Bind(configuration.GetSection("DemoMode"))
+            .ValidateOnStart();
         services.AddOptions<DayScheduleSettings>()
             .Bind(configuration.GetSection("DaySchedule"))
             .ValidateOnStart();
@@ -35,10 +39,23 @@ public static class InfrastructureServiceCollectionExtensions
             .Bind(configuration.GetSection("GoogleCalendar"))
             .ValidateOnStart();
 
-        services.AddSingleton<GoogleCredentialProvider>();
         services.AddSingleton<IClockService, SystemClockService>();
-        services.AddSingleton<ICalendarService, GoogleCalendarService>();
-        services.AddSingleton<IEmailInboxService, GoogleMailInboxService>();
+
+        var demoModeSettings = configuration
+            .GetSection("DemoMode")
+            .Get<DemoModeSettings>() ?? new DemoModeSettings();
+
+        if (demoModeSettings.Enabled)
+        {
+            services.AddSingleton<ICalendarService, DemoCalendarService>();
+            services.AddSingleton<IEmailInboxService, DemoEmailInboxService>();
+        }
+        else
+        {
+            services.AddSingleton<GoogleCredentialProvider>();
+            services.AddSingleton<ICalendarService, GoogleCalendarService>();
+            services.AddSingleton<IEmailInboxService, GoogleMailInboxService>();
+        }
 
         return services;
     }
