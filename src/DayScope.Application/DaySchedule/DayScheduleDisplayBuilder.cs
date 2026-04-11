@@ -53,6 +53,7 @@ public static class DayScheduleDisplayBuilder
         }
 
         return new DayScheduleDisplayState(
+            date,
             localNow.ToString("MMMM yyyy", _culture),
             localNow.ToString("ddd", _culture),
             localNow.ToString("%d", _culture),

@@ -1,6 +1,7 @@
 namespace DayScope.Application.DaySchedule;
 
 public sealed record DayScheduleDisplayState(
+    DateOnly DisplayDate,
     string MonthTitle,
     string DayTitle,
     string DayNumberText,

@@ -101,6 +101,11 @@ public partial class MainWindow : Window
         OpenUri(_viewModel.UnreadEmailInboxUri);
     }
 
+    private void OnOpenGoogleCalendarClick(object sender, RoutedEventArgs e)
+    {
+        OpenUri(_viewModel.GoogleCalendarUri);
+    }
+
     private void OnCopyEventLinkClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel.SelectedEventDetails?.JoinUrl is not Uri joinUrl)

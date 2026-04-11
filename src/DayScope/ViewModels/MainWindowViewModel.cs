@@ -84,6 +84,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public Uri UnreadEmailInboxUri => _unreadEmailInboxUri;
 
+    public Uri GoogleCalendarUri => _googleCalendarUri;
+
     public string UnreadEmailCountText => _unreadEmailCount switch
     {
         null => "--",
@@ -184,6 +186,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     private void ApplyDisplayState(DayScheduleDisplayState state)
     {
+        _displayDate = state.DisplayDate;
         MonthTitle = state.MonthTitle;
         DayTitle = state.DayTitle;
         DayNumberText = state.DayNumberText;
@@ -207,6 +210,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ReplaceCollection(_secondaryTimelineHoursSource, state.SecondaryTimelineHours);
         ReplaceCollection(_allDayEventsSource, state.AllDayEvents);
         ReplaceCollection(_timedEventsSource, state.TimedEvents);
+        UpdateGoogleCalendarUri();
     }
 
     public void UpdateAvailableScheduleWidth(double availableScheduleWidth)
@@ -258,6 +262,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         SetUnreadEmailCount(inboxSnapshot.UnreadCount);
         SetUnreadEmailInboxUri(inboxSnapshot.InboxUri);
+        SetGoogleAccountEmail(inboxSnapshot.EmailAddress);
     }
 
     private void SetUnreadEmailCount(int? unreadEmailCount)
@@ -280,6 +285,65 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             return;
         }
+    }
+
+    private void SetGoogleAccountEmail(string? emailAddress)
+    {
+        var normalizedEmailAddress = string.IsNullOrWhiteSpace(emailAddress)
+            ? null
+            : emailAddress.Trim();
+
+        if (string.Equals(
+            _googleAccountEmail,
+            normalizedEmailAddress,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _googleAccountEmail = normalizedEmailAddress;
+        UpdateGoogleCalendarUri();
+    }
+
+    private void UpdateGoogleCalendarUri()
+    {
+        SetGoogleCalendarUri(BuildGoogleCalendarUri(_displayDate, _googleAccountEmail));
+    }
+
+    private void SetGoogleCalendarUri(Uri calendarUri)
+    {
+        ArgumentNullException.ThrowIfNull(calendarUri);
+
+        if (!SetProperty(ref _googleCalendarUri, calendarUri, nameof(GoogleCalendarUri)))
+        {
+            return;
+        }
+    }
+
+    private static Uri BuildGoogleCalendarUri(
+        DateOnly displayDate,
+        string? emailAddress)
+    {
+        var dayPath = string.Format(
+            CultureInfo.InvariantCulture,
+            "https://calendar.google.com/calendar/r/day/{0}/{1}/{2}",
+            displayDate.Year,
+            displayDate.Month,
+            displayDate.Day);
+
+        if (string.IsNullOrWhiteSpace(emailAddress))
+        {
+            return new Uri(dayPath, UriKind.Absolute);
+        }
+
+        // Inference from current Google web behavior: Calendar accepts authuser with the signed-in account email.
+        return new Uri(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}?authuser={1}",
+                dayPath,
+                Uri.EscapeDataString(emailAddress)),
+            UriKind.Absolute);
     }
 
     private void SetSelectedEventDetails(EventDetailsDisplayState? details)
@@ -306,7 +370,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _calendarTimer;
     private double _availableScheduleWidth = 860;
+    private DateOnly _displayDate = DateOnly.FromDateTime(DateTime.Today);
+    private string? _googleAccountEmail;
     private int? _unreadEmailCount;
+    private Uri _googleCalendarUri = new("https://calendar.google.com/calendar/r/day", UriKind.Absolute);
     private Uri _unreadEmailInboxUri = new("https://mail.google.com/mail/", UriKind.Absolute);
     private EventDetailsDisplayState? _selectedEventDetails;
 }
