@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
+using DayScope.Themes;
 using DayScope.ViewModels;
 using DayScope.Views;
 
@@ -11,6 +12,8 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddSingleton<ThemePreferenceStore>();
+        services.AddSingleton<ThemeManager>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
 

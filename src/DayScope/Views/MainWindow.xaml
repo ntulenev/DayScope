@@ -8,7 +8,7 @@
         Height="680"
         MinWidth="660"
         MinHeight="500"
-        Background="#14171B"
+        Background="{DynamicResource WindowBackgroundBrush}"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
         SnapsToDevicePixels="True"
@@ -21,7 +21,7 @@
         <FontFamily x:Key="UiFont">Segoe UI Variable Display, Segoe UI, Arial</FontFamily>
 
         <Style x:Key="SlimScrollBarThumbStyle" TargetType="Thumb">
-            <Setter Property="Background" Value="#6F8599" />
+            <Setter Property="Background" Value="{DynamicResource ScrollThumbBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
@@ -34,7 +34,7 @@
 
         <Style TargetType="ScrollBar">
             <Setter Property="Width" Value="10" />
-            <Setter Property="Background" Value="#11161B" />
+            <Setter Property="Background" Value="{DynamicResource ScrollBarBackgroundBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
@@ -42,7 +42,7 @@
                               Margin="0,8,0,8"
                               Background="Transparent">
                             <Border Margin="2,0,0,0"
-                                    Background="#101419"
+                                    Background="{DynamicResource SubtleBackgroundBrush}"
                                     CornerRadius="6" />
                             <Track x:Name="PART_Track"
                                    IsDirectionReversed="True">
@@ -76,30 +76,30 @@
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#8D9AA8" />
+            <Setter Property="Foreground" Value="{DynamicResource HourLabelBrush}" />
         </Style>
 
         <Style x:Key="EventCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#395267" />
-            <Setter Property="BorderBrush" Value="#4F6E88" />
+            <Setter Property="Background" Value="{DynamicResource EventAcceptedBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource EventAcceptedAccentBrush}" />
             <Setter Property="Opacity" Value="1" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.AwaitingResponse}">
-                    <Setter Property="Background" Value="#5B4929" />
-                    <Setter Property="BorderBrush" Value="#C79F52" />
+                    <Setter Property="Background" Value="{DynamicResource EventAwaitingBackgroundBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource EventAwaitingAccentBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Tentative}">
-                    <Setter Property="Background" Value="#345663" />
-                    <Setter Property="BorderBrush" Value="#63A6C0" />
+                    <Setter Property="Background" Value="{DynamicResource EventTentativeBackgroundBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource EventTentativeAccentBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Declined}">
-                    <Setter Property="Background" Value="#2C3640" />
-                    <Setter Property="BorderBrush" Value="#68798A" />
+                    <Setter Property="Background" Value="{DynamicResource EventDeclinedBackgroundBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource EventDeclinedAccentBrush}" />
                     <Setter Property="Opacity" Value="0.72" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Cancelled}">
-                    <Setter Property="Background" Value="#2C3137" />
-                    <Setter Property="BorderBrush" Value="#A76464" />
+                    <Setter Property="Background" Value="{DynamicResource EventCancelledBackgroundBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource EventCancelledAccentBrush}" />
                     <Setter Property="Opacity" Value="0.58" />
                 </DataTrigger>
             </Style.Triggers>
@@ -109,18 +109,18 @@
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#ECF6FF" />
+            <Setter Property="Foreground" Value="{DynamicResource EventTitleBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.AwaitingResponse}">
-                    <Setter Property="Foreground" Value="#FFF1CE" />
+                    <Setter Property="Foreground" Value="{DynamicResource EventAwaitingTitleBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Declined}">
                     <Setter Property="TextDecorations" Value="Strikethrough" />
-                    <Setter Property="Foreground" Value="#D5DFE7" />
+                    <Setter Property="Foreground" Value="{DynamicResource EventDeclinedTitleBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Cancelled}">
                     <Setter Property="TextDecorations" Value="Strikethrough" />
-                    <Setter Property="Foreground" Value="#E7D3D3" />
+                    <Setter Property="Foreground" Value="{DynamicResource EventCancelledTitleBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -128,36 +128,36 @@
         <Style x:Key="EventMetaStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="Foreground" Value="#BFD6E9" />
+            <Setter Property="Foreground" Value="{DynamicResource EventMetaBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.AwaitingResponse}">
-                    <Setter Property="Foreground" Value="#F0D8A4" />
+                    <Setter Property="Foreground" Value="{DynamicResource EventAwaitingMetaBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Declined}">
                     <Setter Property="TextDecorations" Value="Strikethrough" />
-                    <Setter Property="Foreground" Value="#B2C0CC" />
+                    <Setter Property="Foreground" Value="{DynamicResource EventDeclinedMetaBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Cancelled}">
                     <Setter Property="TextDecorations" Value="Strikethrough" />
-                    <Setter Property="Foreground" Value="#CBAFAF" />
+                    <Setter Property="Foreground" Value="{DynamicResource EventCancelledMetaBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="EventBadgeStyle" TargetType="Border">
-            <Setter Property="Background" Value="#4F6E88" />
+            <Setter Property="Background" Value="{DynamicResource EventAcceptedAccentBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.AwaitingResponse}">
-                    <Setter Property="Background" Value="#C79F52" />
+                    <Setter Property="Background" Value="{DynamicResource EventAwaitingAccentBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Tentative}">
-                    <Setter Property="Background" Value="#63A6C0" />
+                    <Setter Property="Background" Value="{DynamicResource EventTentativeAccentBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Declined}">
-                    <Setter Property="Background" Value="#68798A" />
+                    <Setter Property="Background" Value="{DynamicResource EventDeclinedAccentBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Appearance}" Value="{x:Static day:EventAppearance.Cancelled}">
-                    <Setter Property="Background" Value="#A76464" />
+                    <Setter Property="Background" Value="{DynamicResource EventCancelledAccentBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -166,9 +166,9 @@
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#F5F7FA" />
-            <Setter Property="Background" Value="#2F6FED" />
-            <Setter Property="BorderBrush" Value="#2F6FED" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource PrimaryActionBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryActionBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="MinHeight" Value="42" />
             <Setter Property="MinWidth" Value="164" />
@@ -192,15 +192,15 @@
         <Style x:Key="ModalSecondaryActionButtonStyle"
                TargetType="Button"
                BasedOn="{StaticResource ModalActionButtonStyle}">
-            <Setter Property="Foreground" Value="#D7E4F2" />
-            <Setter Property="Background" Value="#1A2330" />
-            <Setter Property="BorderBrush" Value="#39506A" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryActionTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SecondaryActionBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SecondaryActionBorderBrush}" />
         </Style>
 
         <Style x:Key="HeaderShortcutButtonStyle" TargetType="Button">
             <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
-            <Setter Property="Background" Value="#191F27" />
-            <Setter Property="BorderBrush" Value="#2A313B" />
+            <Setter Property="Background" Value="{DynamicResource HeaderSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="14,8" />
             <Setter Property="Cursor" Value="Hand" />
@@ -218,12 +218,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chrome" Property="BorderBrush" Value="#415163" />
-                                <Setter TargetName="Chrome" Property="Background" Value="#1C232C" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource HeaderHoverBorderBrush}" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HeaderHoverBackgroundBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Chrome" Property="BorderBrush" Value="#4B5C71" />
-                                <Setter TargetName="Chrome" Property="Background" Value="#202935" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource HeaderPressedBorderBrush}" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HeaderPressedBackgroundBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -232,14 +232,14 @@
         </Style>
 
         <Style x:Key="UnreadEmailBadgeStyle" TargetType="Border">
-            <Setter Property="Background" Value="#445669" />
+            <Setter Property="Background" Value="{DynamicResource UnreadBadgeBrush}" />
             <Setter Property="CornerRadius" Value="10" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding UnreadEmailCount}" Value="{x:Null}">
-                    <Setter Property="Background" Value="#5A6572" />
+                    <Setter Property="Background" Value="{DynamicResource UnreadBadgeUnknownBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasUnreadEmails}" Value="True">
-                    <Setter Property="Background" Value="#F46556" />
+                    <Setter Property="Background" Value="{DynamicResource AccentDangerBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -271,13 +271,13 @@
                 <TextBlock FontFamily="{StaticResource UiFont}"
                            FontSize="22"
                            FontWeight="Bold"
-                           Foreground="#F5F7FA"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
                            Text="{Binding MonthTitle}" />
                 <TextBlock Margin="0,6,0,0"
                            FontFamily="{StaticResource UiFont}"
                            FontSize="13"
                            FontWeight="SemiBold"
-                           Foreground="#7C8794"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Text="{Binding DateText}" />
             </StackPanel>
 
@@ -292,7 +292,7 @@
                     <TextBlock FontFamily="{StaticResource UiFont}"
                                FontSize="16"
                                FontWeight="Bold"
-                               Foreground="#E3EBF4"
+                               Foreground="{DynamicResource HeaderTextBrush}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Text="&lt;" />
@@ -317,7 +317,7 @@
                                    FontFamily="{StaticResource UiFont}"
                                    FontSize="16"
                                    FontWeight="Bold"
-                                   Foreground="#F5F7FA"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                    Text="{Binding DayTitle}" />
 
                         <Border Grid.Column="2"
@@ -325,7 +325,7 @@
                                 Height="30"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                Background="#F46556"
+                                Background="{DynamicResource AccentDangerBrush}"
                                 CornerRadius="8">
                             <TextBlock FontFamily="{StaticResource UiFont}"
                                        FontSize="12"
@@ -345,7 +345,7 @@
                     <TextBlock FontFamily="{StaticResource UiFont}"
                                FontSize="16"
                                FontWeight="Bold"
-                               Foreground="#E3EBF4"
+                               Foreground="{DynamicResource HeaderTextBrush}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Text="&gt;" />
@@ -370,7 +370,7 @@
                                FontFamily="{StaticResource UiFont}"
                                FontSize="13"
                                FontWeight="SemiBold"
-                               Foreground="#E3EBF4"
+                               Foreground="{DynamicResource HeaderTextBrush}"
                                Text="Unread Emails" />
 
                     <Border Grid.Column="2"
@@ -417,13 +417,13 @@
                        FontFamily="{StaticResource UiFont}"
                        FontSize="13"
                        FontWeight="SemiBold"
-                       Foreground="#B8C1CB"
+                       Foreground="{DynamicResource TextMutedBrush}"
                        Text="All-day" />
         </Grid>
 
         <Border Grid.Row="2"
-                Background="#181B20"
-                BorderBrush="#262C35"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="20">
             <ScrollViewer x:Name="ScheduleScrollViewer"
@@ -448,8 +448,8 @@
                         <Border Grid.Column="4"
                                 MinHeight="42"
                                 Padding="10,8"
-                                Background="#151A20"
-                                BorderBrush="#242C36"
+                                Background="{DynamicResource SecondarySurfaceBrush}"
+                                BorderBrush="{DynamicResource SecondarySurfaceBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="10">
                             <Grid>
@@ -503,7 +503,7 @@
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
-                                           Foreground="#6E7A87"
+                                           Foreground="{DynamicResource EmptyStateTextBrush}"
                                            Text="No all-day events">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
@@ -577,8 +577,8 @@
                                 Grid.Column="4"
                                 MinWidth="420"
                                 Height="{Binding TimelineHeight}"
-                                Background="#161A1F"
-                                BorderBrush="#242B35"
+                                Background="{DynamicResource ScheduleSurfaceBackgroundBrush}"
+                                BorderBrush="{DynamicResource ScheduleSurfaceBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12">
                             <Grid>
@@ -599,7 +599,7 @@
                                         <DataTemplate>
                                             <Border Width="{Binding DataContext.ScheduleCanvasWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     Height="1"
-                                                    Background="#242B35" />
+                                                    Background="{DynamicResource ScheduleSurfaceBorderBrush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -702,7 +702,7 @@
                                         Visibility="{Binding ShowNowLine, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <Border Width="{Binding DataContext.ScheduleCanvasWidth, RelativeSource={RelativeSource AncestorType=Canvas}}"
                                             Height="2"
-                                            Background="#FF5A4D"
+                                            Background="{DynamicResource NowLineBrush}"
                                             Canvas.Top="{Binding NowLineTop}" />
                                 </Canvas>
 
@@ -710,15 +710,15 @@
                                         Padding="12,10"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Top"
-                                        Background="#101419"
-                                        BorderBrush="#2A313B"
+                                        Background="{DynamicResource SubtleBackgroundBrush}"
+                                        BorderBrush="{DynamicResource BorderSubtleBrush}"
                                         BorderThickness="1"
                                         CornerRadius="12"
                                         Visibility="{Binding ShowStatus, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <TextBlock FontFamily="{StaticResource UiFont}"
                                                FontSize="12"
                                                FontWeight="SemiBold"
-                                               Foreground="#A9B4C0"
+                                               Foreground="{DynamicResource StatusTextBrush}"
                                                Text="{Binding StatusText}"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap" />
@@ -733,7 +733,7 @@
         <Grid Grid.RowSpan="3"
               Panel.ZIndex="20"
               Visibility="{Binding IsEventDetailsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
-            <Border Background="#B2000000"
+            <Border Background="{DynamicResource OverlayBrush}"
                     MouseLeftButtonUp="OnEventDetailsOverlayMouseLeftButtonUp" />
 
             <Border Width="520"
@@ -742,8 +742,8 @@
                     Padding="18"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Background="#1A1F26"
-                    BorderBrush="#313A46"
+                    Background="{DynamicResource ModalBackgroundBrush}"
+                    BorderBrush="{DynamicResource ModalBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="18">
                 <Grid>
@@ -763,7 +763,7 @@
                             <TextBlock FontFamily="{StaticResource UiFont}"
                                        FontSize="20"
                                        FontWeight="Bold"
-                                       Foreground="#F5F7FA"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        TextWrapping="Wrap"
                                        MaxWidth="420">
                                 <Run Text="{Binding SelectedEventDetails.LeadingIcon}" />
@@ -773,7 +773,7 @@
                                        FontFamily="{StaticResource UiFont}"
                                        FontSize="12"
                                        FontWeight="SemiBold"
-                                       Foreground="#9AA7B6"
+                                       Foreground="{DynamicResource ModalSecondaryTextBrush}"
                                        Text="{Binding SelectedEventDetails.ScheduleText}" />
                             <Border Margin="0,10,0,0"
                                     Padding="8,3"
@@ -792,16 +792,16 @@
                         <Button Grid.Column="1"
                                 Width="30"
                                 Height="30"
-                                Background="#222A34"
-                                BorderBrush="#384555"
+                                Background="{DynamicResource CloseButtonBackgroundBrush}"
+                                BorderBrush="{DynamicResource CloseButtonBorderBrush}"
                                 BorderThickness="1"
                                 Click="OnCloseEventDetailsClick"
                                 Cursor="Hand">
                             <TextBlock FontFamily="{StaticResource UiFont}"
                                        FontSize="14"
                                        FontWeight="Bold"
-                                       Foreground="#D9E3EC"
-                                       Text="Г—"
+                                       Foreground="{DynamicResource CloseButtonTextBrush}"
+                                       Text="Р“вЂ”"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center" />
                         </Button>
@@ -816,12 +816,12 @@
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
-                                           Foreground="#7F8B99"
+                                           Foreground="{DynamicResource SectionLabelBrush}"
                                            Text="Author" />
                                 <TextBlock Margin="0,6,0,0"
                                            FontFamily="{StaticResource UiFont}"
                                            FontSize="13"
-                                           Foreground="#E2EAF2"
+                                           Foreground="{DynamicResource BodyTextBrush}"
                                            Text="{Binding SelectedEventDetails.Organizer}" />
                             </StackPanel>
 
@@ -830,17 +830,17 @@
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
-                                           Foreground="#7F8B99"
+                                           Foreground="{DynamicResource SectionLabelBrush}"
                                            Text="Description" />
                                 <Border Margin="0,6,0,0"
                                         Padding="12"
-                                        Background="#141920"
-                                        BorderBrush="#2A3440"
+                                        Background="{DynamicResource ModalInsetBackgroundBrush}"
+                                        BorderBrush="{DynamicResource ModalInsetBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="10">
                                     <TextBlock FontFamily="{StaticResource UiFont}"
                                                FontSize="13"
-                                               Foreground="#D7E1EA"
+                                               Foreground="{DynamicResource ModalInsetTextBrush}"
                                                view:HtmlTextBlock.Html="{Binding SelectedEventDetails.Description}"
                                                TextWrapping="Wrap" />
                                 </Border>
@@ -851,7 +851,7 @@
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
-                                           Foreground="#7F8B99"
+                                           Foreground="{DynamicResource SectionLabelBrush}"
                                            Text="Participants" />
                                 <ItemsControl Margin="0,8,0,0"
                                               ItemsSource="{Binding SelectedEventDetails.Participants}">
@@ -859,8 +859,8 @@
                                         <DataTemplate>
                                             <Border Margin="0,0,0,8"
                                                     Padding="10,8"
-                                                    Background="#141920"
-                                                    BorderBrush="#2A3440"
+                                                    Background="{DynamicResource ModalInsetBackgroundBrush}"
+                                                    BorderBrush="{DynamicResource ModalInsetBorderBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="10">
                                                 <Grid>
@@ -873,13 +873,13 @@
                                                                 Orientation="Horizontal">
                                                         <TextBlock FontFamily="{StaticResource UiFont}"
                                                                    FontSize="13"
-                                                                   Foreground="#E2EAF2"
+                                                                   Foreground="{DynamicResource BodyTextBrush}"
                                                                    Text="{Binding DisplayName}"
                                                                    TextTrimming="CharacterEllipsis" />
                                                         <TextBlock Margin="4,0,0,0"
                                                                    FontFamily="{StaticResource UiFont}"
                                                                    FontSize="12"
-                                                                   Foreground="#9FB0C1"
+                                                                   Foreground="{DynamicResource BodySubtleTextBrush}"
                                                                    Text="(you)"
                                                                    Visibility="{Binding IsSelf, Converter={StaticResource BoolToVisibilityConverter}}" />
                                                     </StackPanel>
@@ -889,7 +889,7 @@
                                                                FontFamily="{StaticResource UiFont}"
                                                                FontSize="11"
                                                                FontWeight="SemiBold"
-                                                               Foreground="#98A8B8"
+                                                               Foreground="{DynamicResource ParticipantStatusBrush}"
                                                                Text="{Binding StatusLabel}" />
                                                 </Grid>
                                             </Border>
@@ -902,12 +902,12 @@
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
-                                           Foreground="#7F8B99"
+                                           Foreground="{DynamicResource SectionLabelBrush}"
                                            Text="Meeting" />
                                 <StackPanel Margin="0,8,0,0">
                                     <TextBlock FontFamily="{StaticResource UiFont}"
                                                FontSize="12"
-                                               Foreground="#9FB0C1"
+                                               Foreground="{DynamicResource BodySubtleTextBrush}"
                                                Text="{Binding SelectedEventDetails.JoinUrl}"
                                                TextTrimming="CharacterEllipsis" />
                                     <StackPanel Margin="0,12,0,0"

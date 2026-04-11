@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Options;
 
 using DayScope.Domain.Configuration;
+using DayScope.Themes;
 using DayScope.ViewModels;
 
 namespace DayScope.Views;
@@ -16,19 +17,27 @@ public partial class MainWindow : Window
 {
     public MainWindow(
         MainWindowViewModel viewModel,
+        ThemeManager themeManager,
         IOptions<WindowSettings> windowOptions)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(themeManager);
         ArgumentNullException.ThrowIfNull(windowOptions);
 
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
+        _themeManager = themeManager;
         ApplyWindowSettings(windowOptions.Value);
-        SourceInitialized += (_, _) => ApplyDarkTitleBar();
+        SourceInitialized += (_, _) => ApplyWindowTitleBarTheme();
         SizeChanged += (_, _) => UpdateScheduleWidth();
         Closing += OnClosing;
-        Closed += (_, _) => _viewModel.Dispose();
+        Closed += (_, _) =>
+        {
+            _themeManager.ThemeChanged -= OnThemeChanged;
+            _viewModel.Dispose();
+        };
+        _themeManager.ThemeChanged += OnThemeChanged;
     }
 
     public async Task InitializeAsync()
@@ -173,7 +182,12 @@ public partial class MainWindow : Window
         HideToTray();
     }
 
-    private void ApplyDarkTitleBar()
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.Invoke(ApplyWindowTitleBarTheme);
+    }
+
+    private void ApplyWindowTitleBarTheme()
     {
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (windowHandle == IntPtr.Zero)
@@ -181,7 +195,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var enabled = 1;
+        var enabled = _themeManager.IsDarkTheme ? 1 : 0;
         _ = DwmSetWindowAttribute(
             windowHandle,
             DWMWA_USE_IMMERSIVE_DARK_MODE,
@@ -220,5 +234,6 @@ public partial class MainWindow : Window
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
     private bool _allowClose;
+    private readonly ThemeManager _themeManager;
     private readonly MainWindowViewModel _viewModel;
 }
