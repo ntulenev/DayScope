@@ -6,14 +6,22 @@ using Microsoft.Extensions.Hosting;
 
 using DayScope.Application.DependencyInjection;
 using DayScope.DependencyInjection;
+using DayScope.Domain.Configuration;
 using DayScope.Infrastructure.Configuration;
 using DayScope.Themes;
 using DayScope.Views;
 
 namespace DayScope;
 
+/// <summary>
+/// Bootstraps the WPF application, host container, and tray integration.
+/// </summary>
 public partial class App : System.Windows.Application
 {
+    /// <summary>
+    /// Starts the host, resolves the main window, and initializes tray integration.
+    /// </summary>
+    /// <param name="e">The startup event arguments.</param>
     protected override async void OnStartup(StartupEventArgs e)
     {
         ArgumentNullException.ThrowIfNull(e);
@@ -34,6 +42,10 @@ public partial class App : System.Windows.Application
         await _mainWindow.InitializeAsync();
     }
 
+    /// <summary>
+    /// Disposes tray and host resources when the application exits.
+    /// </summary>
+    /// <param name="e">The exit event arguments.</param>
     protected override void OnExit(ExitEventArgs e)
     {
         ArgumentNullException.ThrowIfNull(e);
@@ -61,6 +73,10 @@ public partial class App : System.Windows.Application
         base.OnExit(e);
     }
 
+    /// <summary>
+    /// Creates and configures the application host.
+    /// </summary>
+    /// <returns>The configured application host.</returns>
     private static IHost CreateHost()
     {
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
@@ -71,11 +87,25 @@ public partial class App : System.Windows.Application
         builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
         builder.Services.AddDayScopeApplication();
         builder.Services.AddDayScopeInfrastructure(builder.Configuration);
+        var useDemoInfrastructure =
+            builder.Configuration.GetSection("DemoMode").Get<DemoModeSettings>()?.Enabled is true;
+        if (useDemoInfrastructure)
+        {
+            builder.Services.AddDayScopeDemoInfrastructure();
+        }
+        else
+        {
+            builder.Services.AddDayScopeGoogleInfrastructure();
+        }
+
         builder.Services.AddDayScopePresentation();
 
         return builder.Build();
     }
 
+    /// <summary>
+    /// Creates the notify icon and tray menu.
+    /// </summary>
     private void CreateTrayIcon()
     {
         var openItem = new System.Windows.Forms.ToolStripMenuItem("Open");
@@ -129,11 +159,18 @@ public partial class App : System.Windows.Application
         _trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ToggleMainWindowVisibility);
     }
 
+    /// <summary>
+    /// Shows the main window if it has been created.
+    /// </summary>
     private void ShowMainWindow()
     {
         _mainWindow?.ShowFromTray();
     }
 
+    /// <summary>
+    /// Triggers a manual refresh from the tray menu.
+    /// </summary>
+    /// <returns>A task that completes when the refresh finishes.</returns>
     private async Task RefreshFromTrayAsync()
     {
         if (_mainWindow is null)
@@ -144,6 +181,9 @@ public partial class App : System.Windows.Application
         await _mainWindow.RefreshNowAsync();
     }
 
+    /// <summary>
+    /// Toggles the main window between visible and hidden states.
+    /// </summary>
     private void ToggleMainWindowVisibility()
     {
         if (_mainWindow is null)
@@ -160,6 +200,9 @@ public partial class App : System.Windows.Application
         _mainWindow.ShowFromTray();
     }
 
+    /// <summary>
+    /// Closes the application from the tray menu.
+    /// </summary>
     private void ExitFromTray()
     {
         _mainWindow?.CloseFromTray();
@@ -167,6 +210,10 @@ public partial class App : System.Windows.Application
         Shutdown();
     }
 
+    /// <summary>
+    /// Updates the selected theme mode through the theme manager.
+    /// </summary>
+    /// <param name="themeMode">The theme mode to apply.</param>
     private void SetThemeMode(AppThemeMode themeMode)
     {
         if (_themeManager is null)
@@ -178,11 +225,19 @@ public partial class App : System.Windows.Application
         UpdateThemeMenuSelection();
     }
 
+    /// <summary>
+    /// Refreshes tray menu checks when the theme changes.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The event arguments.</param>
     private void OnThemeChanged(object? sender, EventArgs e)
     {
         Dispatcher.Invoke(UpdateThemeMenuSelection);
     }
 
+    /// <summary>
+    /// Synchronizes tray menu checkmarks with the current theme selection.
+    /// </summary>
     private void UpdateThemeMenuSelection()
     {
         if (_themeManager is null ||
@@ -202,6 +257,10 @@ public partial class App : System.Windows.Application
         _themeDarkPinkMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.DarkPink;
     }
 
+    /// <summary>
+    /// Resolves the icon shown in the system tray.
+    /// </summary>
+    /// <returns>The tray icon to display.</returns>
     private static System.Drawing.Icon ResolveTrayIcon()
     {
         return !string.IsNullOrWhiteSpace(Environment.ProcessPath)

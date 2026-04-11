@@ -1,39 +1,48 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
-using System.Windows.Threading;
 
 using DayScope.Application.Abstractions;
 using DayScope.Application.Calendar;
 using DayScope.Application.Dashboard;
 using DayScope.Application.DaySchedule;
+using DayScope.Threading;
 
 namespace DayScope.ViewModels;
 
+/// <summary>
+/// Coordinates the state and actions rendered by the main dashboard window.
+/// </summary>
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
+    /// </summary>
+    /// <param name="dashboardService">The service that builds schedule display state.</param>
+    /// <param name="emailInboxService">The service that loads unread email data.</param>
+    /// <param name="workspaceUriBuilder">The builder used to create Google Calendar and Gmail links.</param>
+    /// <param name="timerFactory">The factory used to create UI timers.</param>
     public MainWindowViewModel(
-        DayScheduleDashboardService dashboardService,
-        IEmailInboxService emailInboxService)
+        IDayScheduleDashboardService dashboardService,
+        IEmailInboxService emailInboxService,
+        IGoogleWorkspaceUriBuilder workspaceUriBuilder,
+        IUiDispatcherTimerFactory timerFactory)
     {
         ArgumentNullException.ThrowIfNull(dashboardService);
         ArgumentNullException.ThrowIfNull(emailInboxService);
+        ArgumentNullException.ThrowIfNull(workspaceUriBuilder);
+        ArgumentNullException.ThrowIfNull(timerFactory);
 
         _dashboardService = dashboardService;
         _emailInboxService = emailInboxService;
+        _workspaceUriBuilder = workspaceUriBuilder;
         PrimaryTimelineHours = new ReadOnlyObservableCollection<TimelineHourDisplayState>(_primaryTimelineHoursSource);
         SecondaryTimelineHours = new ReadOnlyObservableCollection<TimelineHourDisplayState>(_secondaryTimelineHoursSource);
         AllDayEvents = new ReadOnlyObservableCollection<AllDayEventDisplayState>(_allDayEventsSource);
         TimedEvents = new ReadOnlyObservableCollection<TimedEventDisplayState>(_timedEventsSource);
 
-        _clockTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMinutes(1)
-        };
-        _calendarTimer = new DispatcherTimer
-        {
-            Interval = _dashboardService.CalendarRefreshInterval
-        };
+        _clockTimer = timerFactory.Create(TimeSpan.FromMinutes(1));
+        _calendarTimer = timerFactory.Create(_dashboardService.CalendarRefreshInterval);
 
         _clockTimer.Tick += (_, _) => ApplyDisplayState(
             _dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
@@ -127,19 +136,32 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             ? "Join Google Meet"
             : "Open meeting link";
 
+    /// <summary>
+    /// Loads the initial dashboard state and starts background timers.
+    /// </summary>
+    /// <returns>A task that completes when initialization has finished.</returns>
     public async Task InitializeAsync()
     {
         await RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
-        _clockTimer.Start();
+        _clockTimer.StartTimer();
         if (_dashboardService.IsCalendarEnabled || _emailInboxService.IsEnabled)
         {
-            _calendarTimer.Start();
+            _calendarTimer.StartTimer();
         }
     }
 
+    /// <summary>
+    /// Triggers an interactive dashboard refresh.
+    /// </summary>
+    /// <returns>A task that completes when the refresh has finished.</returns>
     public Task RefreshNowAsync() => RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
+    /// <summary>
+    /// Moves the selected schedule date by the provided number of days.
+    /// </summary>
+    /// <param name="dayOffset">The number of days to move backward or forward.</param>
+    /// <returns>A task that completes when navigation and refresh are finished.</returns>
     public async Task NavigateDaysAsync(int dayOffset)
     {
         if (dayOffset == 0)
@@ -153,6 +175,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         await RefreshDashboardAsync(CalendarInteractionMode.Interactive);
     }
 
+    /// <summary>
+    /// Opens the details overlay for the provided event view model.
+    /// </summary>
+    /// <param name="eventState">The selected timed or all-day event display state.</param>
     public void OpenEventDetails(object? eventState)
     {
         var details = eventState switch
@@ -165,17 +191,28 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         SetSelectedEventDetails(details);
     }
 
+    /// <summary>
+    /// Closes the event details overlay.
+    /// </summary>
     public void CloseEventDetails() => SetSelectedEventDetails(null);
 
+    /// <summary>
+    /// Stops the background timers owned by the view model.
+    /// </summary>
     public void Dispose()
     {
-        _clockTimer.Stop();
-        _calendarTimer.Stop();
+        _clockTimer.StopTimer();
+        _calendarTimer.StopTimer();
     }
 
+    /// <summary>
+    /// Refreshes the dashboard state and unread email count.
+    /// </summary>
+    /// <param name="interactionMode">Whether the refresh is interactive or background.</param>
+    /// <returns>A task that completes when the refresh finishes.</returns>
     private async Task RefreshDashboardAsync(CalendarInteractionMode interactionMode)
     {
-        _calendarTimer.Stop();
+        _calendarTimer.StopTimer();
 
         try
         {
@@ -192,11 +229,15 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             if (_dashboardService.IsCalendarEnabled || _emailInboxService.IsEnabled)
             {
-                _calendarTimer.Start();
+                _calendarTimer.StartTimer();
             }
         }
     }
 
+    /// <summary>
+    /// Applies a new dashboard display state to the view model.
+    /// </summary>
+    /// <param name="state">The display state to apply.</param>
     private void ApplyDisplayState(DayScheduleDisplayState state)
     {
         _displayDate = state.DisplayDate;
@@ -226,6 +267,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         UpdateGoogleCalendarUri();
     }
 
+    /// <summary>
+    /// Updates the available schedule width used when building the timeline layout.
+    /// </summary>
+    /// <param name="availableScheduleWidth">The width available to the schedule canvas.</param>
     public void UpdateAvailableScheduleWidth(double availableScheduleWidth)
     {
         var normalizedWidth = Math.Max(420, Math.Floor(availableScheduleWidth));
@@ -249,6 +294,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Calculates the width required to render a time column label.
+    /// </summary>
+    /// <param name="label">The time zone label to measure.</param>
+    /// <returns>The width used for the time column.</returns>
     private static GridLength ResolveTimeColumnWidth(string? label)
     {
         const double minimumWidth = 72;
@@ -265,6 +315,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         return new GridLength(width);
     }
 
+    /// <summary>
+    /// Refreshes the unread email count and related Google links.
+    /// </summary>
+    /// <param name="allowInteractiveAuthentication">Whether sign-in prompts are allowed.</param>
+    /// <param name="cancellationToken">The cancellation token for the refresh.</param>
+    /// <returns>A task that completes when the inbox snapshot has been applied.</returns>
     private async Task RefreshUnreadEmailCountAsync(
         bool allowInteractiveAuthentication,
         CancellationToken cancellationToken)
@@ -278,6 +334,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         SetGoogleAccountEmail(inboxSnapshot.EmailAddress);
     }
 
+    /// <summary>
+    /// Updates the stored unread email count and dependent derived properties.
+    /// </summary>
+    /// <param name="unreadEmailCount">The unread email count to apply.</param>
     private void SetUnreadEmailCount(int? unreadEmailCount)
     {
         if (!SetProperty(ref _unreadEmailCount, unreadEmailCount, nameof(UnreadEmailCount)))
@@ -290,6 +350,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(UnreadEmailSummaryText));
     }
 
+    /// <summary>
+    /// Updates the Gmail inbox URI.
+    /// </summary>
+    /// <param name="inboxUri">The inbox URI to apply.</param>
     private void SetUnreadEmailInboxUri(Uri inboxUri)
     {
         ArgumentNullException.ThrowIfNull(inboxUri);
@@ -300,6 +364,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Updates the signed-in Google account email and dependent links.
+    /// </summary>
+    /// <param name="emailAddress">The Google account email address, if known.</param>
     private void SetGoogleAccountEmail(string? emailAddress)
     {
         var normalizedEmailAddress = string.IsNullOrWhiteSpace(emailAddress)
@@ -318,11 +386,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         UpdateGoogleCalendarUri();
     }
 
+    /// <summary>
+    /// Rebuilds the Google Calendar URI for the currently selected date.
+    /// </summary>
     private void UpdateGoogleCalendarUri()
     {
-        SetGoogleCalendarUri(BuildGoogleCalendarUri(_displayDate, _googleAccountEmail));
+        SetGoogleCalendarUri(_workspaceUriBuilder.BuildCalendarDayUri(_displayDate, _googleAccountEmail));
     }
 
+    /// <summary>
+    /// Updates the Google Calendar URI.
+    /// </summary>
+    /// <param name="calendarUri">The calendar URI to apply.</param>
     private void SetGoogleCalendarUri(Uri calendarUri)
     {
         ArgumentNullException.ThrowIfNull(calendarUri);
@@ -333,32 +408,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static Uri BuildGoogleCalendarUri(
-        DateOnly displayDate,
-        string? emailAddress)
-    {
-        var dayPath = string.Format(
-            CultureInfo.InvariantCulture,
-            "https://calendar.google.com/calendar/r/day/{0}/{1}/{2}",
-            displayDate.Year,
-            displayDate.Month,
-            displayDate.Day);
-
-        if (string.IsNullOrWhiteSpace(emailAddress))
-        {
-            return new Uri(dayPath, UriKind.Absolute);
-        }
-
-        // Inference from current Google web behavior: Calendar accepts authuser with the signed-in account email.
-        return new Uri(
-            string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}?authuser={1}",
-                dayPath,
-                Uri.EscapeDataString(emailAddress)),
-            UriKind.Absolute);
-    }
-
+    /// <summary>
+    /// Updates the selected event details and dependent overlay properties.
+    /// </summary>
+    /// <param name="details">The event details to apply, or <see langword="null"/> to close the overlay.</param>
     private void SetSelectedEventDetails(EventDetailsDisplayState? details)
     {
         if (!SetProperty(ref _selectedEventDetails, details, nameof(SelectedEventDetails)))
@@ -374,14 +427,15 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SelectedEventJoinLabel));
     }
 
-    private readonly DayScheduleDashboardService _dashboardService;
+    private readonly IDayScheduleDashboardService _dashboardService;
     private readonly ObservableCollection<TimelineHourDisplayState> _primaryTimelineHoursSource = [];
     private readonly ObservableCollection<TimelineHourDisplayState> _secondaryTimelineHoursSource = [];
     private readonly ObservableCollection<AllDayEventDisplayState> _allDayEventsSource = [];
     private readonly ObservableCollection<TimedEventDisplayState> _timedEventsSource = [];
     private readonly IEmailInboxService _emailInboxService;
-    private readonly DispatcherTimer _clockTimer;
-    private readonly DispatcherTimer _calendarTimer;
+    private readonly IGoogleWorkspaceUriBuilder _workspaceUriBuilder;
+    private readonly IUiDispatcherTimer _clockTimer;
+    private readonly IUiDispatcherTimer _calendarTimer;
     private double _availableScheduleWidth = 860;
     private DateOnly _displayDate = DateOnly.FromDateTime(DateTime.Today);
     private string? _googleAccountEmail;

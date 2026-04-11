@@ -7,17 +7,35 @@ using DayScope.Infrastructure.Google;
 
 namespace DayScope.Infrastructure.Mail;
 
+/// <summary>
+/// Loads unread inbox data from the Gmail API.
+/// </summary>
 public sealed class GoogleMailInboxService : IEmailInboxService
 {
-    public GoogleMailInboxService(GoogleCredentialProvider credentialProvider)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GoogleMailInboxService"/> class.
+    /// </summary>
+    /// <param name="credentialProvider">The credential provider used to authorize API calls.</param>
+    /// <param name="workspaceUriBuilder">The builder used to create account-aware Gmail links.</param>
+    public GoogleMailInboxService(
+        GoogleCredentialProvider credentialProvider,
+        IGoogleWorkspaceUriBuilder workspaceUriBuilder)
     {
         ArgumentNullException.ThrowIfNull(credentialProvider);
+        ArgumentNullException.ThrowIfNull(workspaceUriBuilder);
 
         _credentialProvider = credentialProvider;
+        _workspaceUriBuilder = workspaceUriBuilder;
     }
 
     public bool IsEnabled => _credentialProvider.IsEnabled;
 
+    /// <summary>
+    /// Loads the current unread Gmail snapshot.
+    /// </summary>
+    /// <param name="allowInteractiveAuthentication">Whether the request may prompt the user to sign in.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>The current inbox snapshot.</returns>
     public async Task<EmailInboxSnapshot> GetInboxSnapshotAsync(
         bool allowInteractiveAuthentication,
         CancellationToken cancellationToken)
@@ -61,7 +79,13 @@ public sealed class GoogleMailInboxService : IEmailInboxService
         }
     }
 
-    private static EmailInboxSnapshot CreateSnapshot(
+    /// <summary>
+    /// Builds the inbox snapshot returned to the application layer.
+    /// </summary>
+    /// <param name="unreadCount">The unread thread count, if available.</param>
+    /// <param name="emailAddress">The signed-in Gmail address, if known.</param>
+    /// <returns>The normalized inbox snapshot.</returns>
+    private EmailInboxSnapshot CreateSnapshot(
         int? unreadCount,
         string? emailAddress)
     {
@@ -72,28 +96,12 @@ public sealed class GoogleMailInboxService : IEmailInboxService
         return new EmailInboxSnapshot(
             unreadCount,
             normalizedEmailAddress,
-            BuildInboxUri(normalizedEmailAddress));
-    }
-
-    private static Uri BuildInboxUri(string? emailAddress)
-    {
-        if (string.IsNullOrWhiteSpace(emailAddress))
-        {
-            return _defaultInboxUri;
-        }
-
-        // Inference from current Google web behavior: authuser accepts the signed-in account email.
-        return new Uri(
-            string.Format(
-                System.Globalization.CultureInfo.InvariantCulture,
-                "https://mail.google.com/mail/u/?authuser={0}#inbox",
-                Uri.EscapeDataString(emailAddress)),
-            UriKind.Absolute);
+            _workspaceUriBuilder.BuildInboxUri(normalizedEmailAddress));
     }
 
     private const string GMAIL_USER_ID = "me";
     private const string INBOX_LABEL_ID = "INBOX";
-    private static readonly Uri _defaultInboxUri = new("https://mail.google.com/mail/");
 
     private readonly GoogleCredentialProvider _credentialProvider;
+    private readonly IGoogleWorkspaceUriBuilder _workspaceUriBuilder;
 }

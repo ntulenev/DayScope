@@ -16,8 +16,16 @@ using DayScope.Infrastructure.Google;
 
 namespace DayScope.Infrastructure.Calendar;
 
+/// <summary>
+/// Loads calendar data from the Google Calendar API.
+/// </summary>
 public sealed class GoogleCalendarService : ICalendarService
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GoogleCalendarService"/> class.
+    /// </summary>
+    /// <param name="settings">The configured Google integration settings.</param>
+    /// <param name="credentialProvider">The credential provider used to authorize API calls.</param>
     public GoogleCalendarService(
         IOptions<GoogleCalendarSettings> settings,
         GoogleCredentialProvider credentialProvider)
@@ -31,6 +39,14 @@ public sealed class GoogleCalendarService : ICalendarService
 
     public bool IsEnabled => _credentialProvider.IsEnabled;
 
+    /// <summary>
+    /// Loads Google Calendar events for the requested day.
+    /// </summary>
+    /// <param name="day">The day to load.</param>
+    /// <param name="timeZone">The time zone that defines the requested day boundaries.</param>
+    /// <param name="interactionMode">Whether the request may use interactive authentication.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>The result of the calendar load operation.</returns>
     public async Task<CalendarLoadResult> GetEventsForDateAsync(
         DateOnly day,
         TimeZoneInfo timeZone,
@@ -89,7 +105,7 @@ public sealed class GoogleCalendarService : ICalendarService
                 .Select(item => MapEvent(item, timeZone))
                 .Where(item => item is not null)
                 .Cast<CalendarEvent>()
-                .Where(item => IntersectsDay(item, startOfDay, startOfNextDay))
+                .Where(item => item.Intersects(startOfDay, startOfNextDay))
                 .OrderBy(item => item.Start)
                 .ToArray()
                 ?? [];
@@ -116,6 +132,12 @@ public sealed class GoogleCalendarService : ICalendarService
         }
     }
 
+    /// <summary>
+    /// Maps a Google Calendar API event into the normalized domain model.
+    /// </summary>
+    /// <param name="calendarEvent">The API event.</param>
+    /// <param name="timeZone">The fallback time zone for all-day values.</param>
+    /// <returns>The normalized event, or <see langword="null"/> when the source event cannot be represented.</returns>
     private static CalendarEvent? MapEvent(
         Event calendarEvent,
         TimeZoneInfo timeZone)
@@ -159,6 +181,11 @@ public sealed class GoogleCalendarService : ICalendarService
                 ?? []);
     }
 
+    /// <summary>
+    /// Maps a Google attendee into the normalized participant model.
+    /// </summary>
+    /// <param name="attendee">The attendee to map.</param>
+    /// <returns>The normalized participant, or <see langword="null"/> when the attendee is missing.</returns>
     private static CalendarEventParticipant? MapParticipant(EventAttendee? attendee)
     {
         if (attendee is null)
@@ -173,6 +200,11 @@ public sealed class GoogleCalendarService : ICalendarService
             attendee.Self is true);
     }
 
+    /// <summary>
+    /// Maps a Google attendee response status to the domain participation status.
+    /// </summary>
+    /// <param name="responseStatus">The Google response status value.</param>
+    /// <returns>The normalized participation status.</returns>
     private static CalendarParticipationStatus ResolveParticipationStatus(string? responseStatus)
     {
         return responseStatus?.ToUpperInvariant() switch
@@ -185,6 +217,11 @@ public sealed class GoogleCalendarService : ICalendarService
         };
     }
 
+    /// <summary>
+    /// Resolves the signed-in user's participation status for a Google event.
+    /// </summary>
+    /// <param name="calendarEvent">The source API event.</param>
+    /// <returns>The normalized participation status.</returns>
     private static CalendarParticipationStatus ResolveParticipationStatus(Event calendarEvent)
     {
         if (string.Equals(calendarEvent.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
@@ -202,6 +239,11 @@ public sealed class GoogleCalendarService : ICalendarService
         return ResolveParticipationStatus(selfResponseStatus);
     }
 
+    /// <summary>
+    /// Resolves the meeting link for a Google event when one is available.
+    /// </summary>
+    /// <param name="calendarEvent">The source API event.</param>
+    /// <returns>The validated join URI, or <see langword="null"/> when absent or invalid.</returns>
     private static Uri? ResolveJoinUrl(Event calendarEvent)
     {
         if (!string.IsNullOrWhiteSpace(calendarEvent.HangoutLink))
@@ -214,15 +256,11 @@ public sealed class GoogleCalendarService : ICalendarService
         return null;
     }
 
-    private static bool IntersectsDay(
-        CalendarEvent calendarEvent,
-        DateTimeOffset startOfDay,
-        DateTimeOffset startOfNextDay)
-    {
-        var eventEnd = calendarEvent.End ?? calendarEvent.Start.AddMinutes(30);
-        return calendarEvent.Start < startOfNextDay && eventEnd > startOfDay;
-    }
-
+    /// <summary>
+    /// Maps the Google event type to the normalized domain event kind.
+    /// </summary>
+    /// <param name="calendarEvent">The source API event.</param>
+    /// <returns>The normalized event kind.</returns>
     private static CalendarEventKind ResolveEventKind(Event calendarEvent)
     {
         return calendarEvent.EventType switch
@@ -236,6 +274,12 @@ public sealed class GoogleCalendarService : ICalendarService
         };
     }
 
+    /// <summary>
+    /// Resolves a Google event date-time payload into a concrete instant.
+    /// </summary>
+    /// <param name="eventDateTime">The Google date-time payload.</param>
+    /// <param name="timeZone">The fallback time zone for all-day dates.</param>
+    /// <returns>The resolved instant, or <see langword="null"/> when the payload is invalid.</returns>
     private static DateTimeOffset? ResolveEventDateTime(
         EventDateTime? eventDateTime,
         TimeZoneInfo timeZone)
@@ -274,6 +318,13 @@ public sealed class GoogleCalendarService : ICalendarService
         return new DateTimeOffset(localDateTime, timeZone.GetUtcOffset(localDateTime));
     }
 
+    /// <summary>
+    /// Creates a local start-of-hour instant for the requested date in the target time zone.
+    /// </summary>
+    /// <param name="timeZone">The time zone that defines the offset.</param>
+    /// <param name="date">The local date.</param>
+    /// <param name="hour">The local hour.</param>
+    /// <returns>The resulting <see cref="DateTimeOffset"/>.</returns>
     private static DateTimeOffset CreateDateTimeOffset(
         TimeZoneInfo timeZone,
         DateOnly date,

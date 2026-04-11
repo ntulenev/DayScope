@@ -12,8 +12,15 @@ using DayScope.Infrastructure.Configuration;
 
 namespace DayScope.Infrastructure.Google;
 
+/// <summary>
+/// Loads and refreshes Google OAuth credentials used by infrastructure services.
+/// </summary>
 public sealed class GoogleCredentialProvider
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GoogleCredentialProvider"/> class.
+    /// </summary>
+    /// <param name="settings">The configured Google integration settings.</param>
     public GoogleCredentialProvider(IOptions<GoogleCalendarSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -23,6 +30,12 @@ public sealed class GoogleCredentialProvider
 
     internal bool IsEnabled => _settings.Enabled;
 
+    /// <summary>
+    /// Loads a cached Google credential and optionally performs interactive authorization when required.
+    /// </summary>
+    /// <param name="allowInteractiveAuthentication">Whether the user may be prompted to sign in.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>The credential load result.</returns>
     internal async Task<GoogleCredentialLoadResult> GetCredentialAsync(
         bool allowInteractiveAuthentication,
         CancellationToken cancellationToken)
@@ -61,6 +74,11 @@ public sealed class GoogleCredentialProvider
         }
     }
 
+    /// <summary>
+    /// Creates the OAuth authorization flow configured for the application token store and scopes.
+    /// </summary>
+    /// <param name="clientSecrets">The Google OAuth client secrets.</param>
+    /// <returns>The configured authorization flow.</returns>
     private GoogleAuthorizationCodeFlow CreateAuthorizationFlow(ClientSecrets clientSecrets)
     {
         var initializer = new GoogleAuthorizationCodeFlow.Initializer
@@ -75,6 +93,12 @@ public sealed class GoogleCredentialProvider
         return new PkceGoogleAuthorizationCodeFlow(initializer);
     }
 
+    /// <summary>
+    /// Runs the installed-app OAuth flow and stores the resulting credential.
+    /// </summary>
+    /// <param name="flow">The authorization flow to use.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>The authorized user credential.</returns>
     private static async Task<UserCredential> AuthorizeInteractivelyAsync(
         GoogleAuthorizationCodeFlow flow,
         CancellationToken cancellationToken)
@@ -83,6 +107,12 @@ public sealed class GoogleCredentialProvider
         return await authApp.AuthorizeAsync(TOKEN_STORE_USER_ID, cancellationToken);
     }
 
+    /// <summary>
+    /// Loads a previously authorized credential from the token store.
+    /// </summary>
+    /// <param name="flow">The authorization flow used to access the token store.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>The stored credential, or <see langword="null"/> when none exists.</returns>
     private static async Task<UserCredential?> LoadCredentialAsync(
         GoogleAuthorizationCodeFlow flow,
         CancellationToken cancellationToken)
@@ -93,6 +123,10 @@ public sealed class GoogleCredentialProvider
             : new UserCredential(flow, TOKEN_STORE_USER_ID, token);
     }
 
+    /// <summary>
+    /// Resolves the directory used to persist Google OAuth tokens.
+    /// </summary>
+    /// <returns>The absolute token store directory path.</returns>
     private string GetTokenStoreDirectory()
     {
         var configuredPath = PathResolver.ResolvePath(_settings.TokenStoreDirectory);
@@ -120,6 +154,9 @@ public sealed class GoogleCredentialProvider
     private readonly GoogleCalendarSettings _settings;
 }
 
+/// <summary>
+/// Represents the outcome of attempting to load Google OAuth credentials.
+/// </summary>
 internal enum GoogleCredentialLoadStatus
 {
     Success = 0,
@@ -128,23 +165,45 @@ internal enum GoogleCredentialLoadStatus
     AuthorizationRequired = 3
 }
 
+/// <summary>
+/// Carries the result of a Google credential load attempt.
+/// </summary>
+/// <param name="Status">The credential load status.</param>
+/// <param name="Credential">The loaded credential, when available.</param>
 internal sealed record GoogleCredentialLoadResult(
     GoogleCredentialLoadStatus Status,
     UserCredential? Credential)
 {
-    public static GoogleCredentialLoadResult Success(UserCredential credential)
+    /// <summary>
+    /// Creates a successful result that contains a usable credential.
+    /// </summary>
+    /// <param name="credential">The loaded credential.</param>
+    /// <returns>The successful load result.</returns>
+    internal static GoogleCredentialLoadResult Success(UserCredential credential)
     {
         ArgumentNullException.ThrowIfNull(credential);
 
         return new GoogleCredentialLoadResult(GoogleCredentialLoadStatus.Success, credential);
     }
 
-    public static GoogleCredentialLoadResult Disabled() =>
+    /// <summary>
+    /// Creates a result that indicates Google integration is disabled.
+    /// </summary>
+    /// <returns>The disabled result.</returns>
+    internal static GoogleCredentialLoadResult Disabled() =>
         new(GoogleCredentialLoadStatus.Disabled, null);
 
-    public static GoogleCredentialLoadResult ClientSecretsMissing() =>
+    /// <summary>
+    /// Creates a result that indicates the OAuth client secrets file is missing.
+    /// </summary>
+    /// <returns>The missing-client-secrets result.</returns>
+    internal static GoogleCredentialLoadResult ClientSecretsMissing() =>
         new(GoogleCredentialLoadStatus.ClientSecretsMissing, null);
 
-    public static GoogleCredentialLoadResult AuthorizationRequired() =>
+    /// <summary>
+    /// Creates a result that indicates the user must authorize the application.
+    /// </summary>
+    /// <returns>The authorization-required result.</returns>
+    internal static GoogleCredentialLoadResult AuthorizationRequired() =>
         new(GoogleCredentialLoadStatus.AuthorizationRequired, null);
 }

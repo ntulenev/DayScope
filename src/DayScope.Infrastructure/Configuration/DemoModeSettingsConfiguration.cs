@@ -5,18 +5,18 @@ using DayScope.Domain.Configuration;
 namespace DayScope.Infrastructure.Configuration;
 
 /// <summary>
-/// Applies normalization and validation rules to <see cref="GoogleCalendarSettings"/>.
+/// Applies normalization and validation rules to <see cref="DemoModeSettings"/>.
 /// </summary>
-public sealed class GoogleCalendarSettingsConfiguration :
-    IPostConfigureOptions<GoogleCalendarSettings>,
-    IValidateOptions<GoogleCalendarSettings>
+public sealed class DemoModeSettingsConfiguration :
+    IPostConfigureOptions<DemoModeSettings>,
+    IValidateOptions<DemoModeSettings>
 {
     /// <summary>
-    /// Normalizes bound Google settings after configuration binding.
+    /// Normalizes bound demo mode settings after configuration binding.
     /// </summary>
     /// <param name="name">The options instance name.</param>
     /// <param name="options">The options instance to normalize.</param>
-    public void PostConfigure(string? name, GoogleCalendarSettings options)
+    public void PostConfigure(string? name, DemoModeSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -24,12 +24,12 @@ public sealed class GoogleCalendarSettingsConfiguration :
     }
 
     /// <summary>
-    /// Validates the normalized Google settings.
+    /// Validates the normalized demo mode settings.
     /// </summary>
     /// <param name="name">The options instance name.</param>
     /// <param name="options">The options instance to validate.</param>
     /// <returns>The validation result.</returns>
-    public ValidateOptionsResult Validate(string? name, GoogleCalendarSettings options)
+    public ValidateOptionsResult Validate(string? name, DemoModeSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
 

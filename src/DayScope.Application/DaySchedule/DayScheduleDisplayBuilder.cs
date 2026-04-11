@@ -1,24 +1,37 @@
 using System.Globalization;
 
 using DayScope.Application.Calendar;
-using DayScope.Domain.Calendar;
 using DayScope.Domain.Configuration;
 
 namespace DayScope.Application.DaySchedule;
 
+/// <summary>
+/// Builds the display model shown by the day schedule dashboard.
+/// </summary>
 public static class DayScheduleDisplayBuilder
 {
+    /// <summary>
+    /// Converts the current calendar load result into a display state for the dashboard.
+    /// </summary>
+    /// <param name="loadResult">The current calendar load result.</param>
+    /// <param name="settings">The schedule display settings.</param>
+    /// <param name="now">The current time.</param>
+    /// <param name="selectedDate">The selected date to display.</param>
+    /// <param name="localZone">The local time zone used for display calculations.</param>
+    /// <param name="availableScheduleWidth">The available schedule width, if known.</param>
+    /// <returns>The display state shown by the dashboard.</returns>
     public static DayScheduleDisplayState Build(
         CalendarLoadResult loadResult,
         DayScheduleSettings settings,
         DateTimeOffset now,
         DateOnly selectedDate,
+        TimeZoneInfo localZone,
         double? availableScheduleWidth = null)
     {
         ArgumentNullException.ThrowIfNull(loadResult);
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(localZone);
 
-        var localZone = TimeZoneInfo.Local;
         var localNow = TimeZoneInfo.ConvertTime(now, localZone);
         var today = DateOnly.FromDateTime(localNow.DateTime);
         var dateDisplay = selectedDate.ToDateTime(TimeOnly.MinValue);
@@ -31,26 +44,23 @@ public static class DayScheduleDisplayBuilder
 
         var allDayEvents = loadResult.Agenda.Events
             .Where(calendarEvent => calendarEvent.IsAllDay)
-            .Select(calendarEvent => new AllDayEventDisplayState(
-                calendarEvent.SafeTitle,
-                MapAppearance(calendarEvent.ParticipationStatus),
-                GetStatusLabel(calendarEvent.ParticipationStatus),
-                GetLeadingIcon(calendarEvent.EventKind),
-                BuildEventDetails(calendarEvent, localZone)))
+            .Select(calendarEvent => DayScheduleEventPresentationFactory.CreateAllDayEvent(
+                calendarEvent,
+                localZone))
             .ToArray();
 
-        var timedEvents = BuildTimedEvents(
+        var timedEvents = DayScheduleTimelineLayout.BuildTimedEvents(
             loadResult.Agenda.Events,
             timelineStart,
             timelineEnd,
             scheduleWidth,
-            settings.HourHeight)
-            .ToArray();
+            settings.HourHeight,
+            localZone);
 
         var statusText = GetStatusText(loadResult.Status, selectedDate == today);
         if (loadResult.Status == CalendarLoadStatus.Success &&
             allDayEvents.Length == 0 &&
-            timedEvents.Length == 0)
+            timedEvents.Count == 0)
         {
             statusText = selectedDate == today
                 ? "No events scheduled for today."
@@ -84,6 +94,13 @@ public static class DayScheduleDisplayBuilder
             localNow.ToString("h:mm tt", _culture).Replace(" ", string.Empty, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Builds hour markers for the timeline in the requested time zone.
+    /// </summary>
+    /// <param name="timelineStart">The start instant of the rendered timeline.</param>
+    /// <param name="settings">The schedule settings that define the visible range.</param>
+    /// <param name="zone">The time zone used to label the markers.</param>
+    /// <returns>The ordered timeline hour markers.</returns>
     private static List<TimelineHourDisplayState> BuildTimelineHours(
         DateTimeOffset timelineStart,
         DayScheduleSettings settings,
@@ -105,6 +122,12 @@ public static class DayScheduleDisplayBuilder
         return hours;
     }
 
+    /// <summary>
+    /// Resolves the effective schedule canvas width from configuration and layout measurements.
+    /// </summary>
+    /// <param name="configuredWidth">The configured fallback width.</param>
+    /// <param name="availableScheduleWidth">The width measured by the view, if available.</param>
+    /// <returns>The clamped schedule width used for layout.</returns>
     private static int ResolveScheduleWidth(
         int configuredWidth,
         double? availableScheduleWidth)
@@ -116,200 +139,13 @@ public static class DayScheduleDisplayBuilder
         return Math.Max(420, width);
     }
 
-    private static IEnumerable<TimedEventDisplayState> BuildTimedEvents(
-        IReadOnlyList<CalendarEvent> events,
-        DateTimeOffset timelineStart,
-        DateTimeOffset timelineEnd,
-        int canvasWidth,
-        int hourHeight)
-    {
-        var candidates = events
-            .Where(calendarEvent => !calendarEvent.IsAllDay)
-            .Select(calendarEvent => CreateLayoutCandidate(
-                calendarEvent,
-                timelineStart,
-                timelineEnd,
-                hourHeight))
-            .Where(candidate => candidate is not null)
-            .Cast<LayoutCandidate>()
-            .OrderBy(candidate => candidate.Start)
-            .ThenBy(candidate => candidate.End)
-            .ToArray();
-
-        if (candidates.Length == 0)
-        {
-            yield break;
-        }
-
-        var groups = new List<List<LayoutCandidate>>();
-        var currentGroup = new List<LayoutCandidate>();
-        var groupMaxEnd = DateTimeOffset.MinValue;
-
-        foreach (var candidate in candidates)
-        {
-            if (currentGroup.Count == 0 || candidate.Start < groupMaxEnd)
-            {
-                currentGroup.Add(candidate);
-                if (candidate.End > groupMaxEnd)
-                {
-                    groupMaxEnd = candidate.End;
-                }
-
-                continue;
-            }
-
-            groups.Add(currentGroup);
-            currentGroup = [candidate];
-            groupMaxEnd = candidate.End;
-        }
-
-        if (currentGroup.Count > 0)
-        {
-            groups.Add(currentGroup);
-        }
-
-        foreach (var group in groups)
-        {
-            foreach (var calendarEvent in BuildEventGroup(group, timelineStart, canvasWidth))
-            {
-                yield return calendarEvent;
-            }
-        }
-    }
-
-    private static IEnumerable<TimedEventDisplayState> BuildEventGroup(
-        IReadOnlyList<LayoutCandidate> group,
-        DateTimeOffset timelineStart,
-        int canvasWidth)
-    {
-        var columnEndTimes = new List<DateTimeOffset>();
-        var assignments = new List<(LayoutCandidate Candidate, int Column)>();
-
-        foreach (var candidate in group)
-        {
-            var assignedColumn = -1;
-            for (var columnIndex = 0; columnIndex < columnEndTimes.Count; columnIndex++)
-            {
-                if (columnEndTimes[columnIndex] <= candidate.Start)
-                {
-                    assignedColumn = columnIndex;
-                    columnEndTimes[columnIndex] = candidate.End;
-                    break;
-                }
-            }
-
-            if (assignedColumn < 0)
-            {
-                assignedColumn = columnEndTimes.Count;
-                columnEndTimes.Add(candidate.End);
-            }
-
-            assignments.Add((candidate, assignedColumn));
-        }
-
-        const double gap = 10;
-        var columnCount = Math.Max(1, columnEndTimes.Count);
-        var availableWidth = canvasWidth - ((columnCount - 1) * gap);
-        var columnWidth = availableWidth / columnCount;
-
-        return assignments.Select(assignment =>
-        {
-            var top = (assignment.Candidate.Start - timelineStart).TotalMinutes
-                / 60d
-                * assignment.Candidate.HourHeight;
-            var height = Math.Max(
-                20,
-                (assignment.Candidate.End - assignment.Candidate.Start).TotalMinutes
-                / 60d
-                * assignment.Candidate.HourHeight);
-            var isMicro = height < 26;
-            var isCompact = columnCount > 1 || height < 52;
-            var showScheduleText = !isCompact && !isMicro;
-            var showStatusBadge = !isMicro && height >= 28 && columnWidth >= 150;
-
-            return new TimedEventDisplayState(
-                assignment.Candidate.Title,
-                assignment.Candidate.ScheduleText,
-                top,
-                height,
-                assignment.Column * (columnWidth + gap),
-                columnWidth,
-                isCompact,
-                isMicro,
-                showScheduleText,
-                showStatusBadge,
-                assignment.Candidate.Appearance,
-                assignment.Candidate.StatusLabel,
-                assignment.Candidate.LeadingIcon,
-                assignment.Candidate.Details);
-        });
-    }
-
-    private static LayoutCandidate? CreateLayoutCandidate(
-        CalendarEvent calendarEvent,
-        DateTimeOffset timelineStart,
-        DateTimeOffset timelineEnd,
-        int hourHeight)
-    {
-        var start = calendarEvent.Start.ToLocalTime();
-        var end = (calendarEvent.End ?? calendarEvent.Start.AddMinutes(30)).ToLocalTime();
-        if (end <= start)
-        {
-            end = start.AddMinutes(30);
-        }
-
-        if (end <= timelineStart || start >= timelineEnd)
-        {
-            return null;
-        }
-
-        var clippedStart = start < timelineStart ? timelineStart : start;
-        var clippedEnd = end > timelineEnd ? timelineEnd : end;
-
-        return new LayoutCandidate(
-            calendarEvent.SafeTitle,
-            clippedStart,
-            clippedEnd,
-            $"{start:h:mm tt}-{end:h:mm tt}"
-                .Replace(" ", string.Empty, StringComparison.Ordinal),
-            hourHeight,
-            MapAppearance(calendarEvent.ParticipationStatus),
-            GetStatusLabel(calendarEvent.ParticipationStatus),
-            GetLeadingIcon(calendarEvent.EventKind),
-            BuildEventDetails(calendarEvent, TimeZoneInfo.Local));
-    }
-
-    private static EventDetailsDisplayState BuildEventDetails(
-        CalendarEvent calendarEvent,
-        TimeZoneInfo localZone)
-    {
-        var start = TimeZoneInfo.ConvertTime(calendarEvent.Start, localZone);
-        var end = TimeZoneInfo.ConvertTime(
-            calendarEvent.End ?? calendarEvent.Start.AddMinutes(30),
-            localZone);
-        var scheduleText = calendarEvent.IsAllDay
-            ? "All day"
-            : $"{start:h:mm tt}-{end:h:mm tt}"
-                .Replace(" ", string.Empty, StringComparison.Ordinal);
-
-        return new EventDetailsDisplayState(
-            calendarEvent.SafeTitle,
-            scheduleText,
-            MapAppearance(calendarEvent.ParticipationStatus),
-            GetStatusLabel(calendarEvent.ParticipationStatus),
-            GetLeadingIcon(calendarEvent.EventKind),
-            calendarEvent.OrganizerDisplayLabel,
-            NormalizeDescription(calendarEvent.Description),
-            NormalizeJoinUrl(calendarEvent.JoinUrl),
-            [
-                .. calendarEvent.Participants
-                .Select(participant => new EventParticipantDisplayState(
-                    participant.DisplayLabel,
-                    GetStatusLabel(participant.ParticipationStatus),
-                    participant.IsSelf))
-            ]);
-    }
-
+    /// <summary>
+    /// Creates a local instant for the specified date and hour in the target time zone.
+    /// </summary>
+    /// <param name="timeZone">The time zone that defines the offset.</param>
+    /// <param name="date">The local date.</param>
+    /// <param name="hour">The local hour, including values beyond 23 for next-day rollover.</param>
+    /// <returns>The resulting <see cref="DateTimeOffset"/>.</returns>
     private static DateTimeOffset CreateDateTimeOffset(
         TimeZoneInfo timeZone,
         DateOnly date,
@@ -324,6 +160,15 @@ public static class DayScheduleDisplayBuilder
         return new DateTimeOffset(dateTime, timeZone.GetUtcOffset(dateTime));
     }
 
+    /// <summary>
+    /// Calculates the vertical position of the current-time indicator when it falls inside the visible day.
+    /// </summary>
+    /// <param name="localNow">The current local instant.</param>
+    /// <param name="selectedDate">The day being displayed.</param>
+    /// <param name="timelineStart">The first visible instant.</param>
+    /// <param name="timelineEnd">The last visible instant.</param>
+    /// <param name="hourHeight">The rendered height of one hour block.</param>
+    /// <returns>The vertical offset for the now line, or <see langword="null"/> when it should be hidden.</returns>
     private static double? TryBuildNowLine(
         DateTimeOffset localNow,
         DateOnly selectedDate,
@@ -341,6 +186,13 @@ public static class DayScheduleDisplayBuilder
         return (localNow - timelineStart).TotalMinutes / 60d * hourHeight;
     }
 
+    /// <summary>
+    /// Resolves the label shown for a time zone, preferring explicit configuration when present.
+    /// </summary>
+    /// <param name="timeZone">The time zone being labeled.</param>
+    /// <param name="configuredLabel">The optional configured label override.</param>
+    /// <param name="instant">The instant used to calculate the current UTC offset.</param>
+    /// <returns>The label displayed in the UI.</returns>
     private static string ResolveTimeZoneLabel(
         TimeZoneInfo timeZone,
         string? configuredLabel,
@@ -357,20 +209,11 @@ public static class DayScheduleDisplayBuilder
         return $"UTC{sign}{absoluteOffset:hh\\:mm}";
     }
 
-    private static string? NormalizeDescription(string? description)
-    {
-        if (string.IsNullOrWhiteSpace(description))
-        {
-            return null;
-        }
-
-        return description
-            .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Trim();
-    }
-
-    private static Uri? NormalizeJoinUrl(Uri? joinUrl) => joinUrl;
-
+    /// <summary>
+    /// Resolves a system time zone identifier when it is valid on the current machine.
+    /// </summary>
+    /// <param name="timeZoneId">The configured time zone identifier.</param>
+    /// <returns>The resolved time zone, or <see langword="null"/> when the identifier is missing or invalid.</returns>
     private static TimeZoneInfo? TryResolveTimeZone(string? timeZoneId)
     {
         if (string.IsNullOrWhiteSpace(timeZoneId))
@@ -392,6 +235,12 @@ public static class DayScheduleDisplayBuilder
         }
     }
 
+    /// <summary>
+    /// Maps the calendar load status to the status text shown in the dashboard.
+    /// </summary>
+    /// <param name="status">The current calendar load status.</param>
+    /// <param name="isToday">Whether the selected date is the current local day.</param>
+    /// <returns>The user-facing status message.</returns>
     private static string GetStatusText(
         CalendarLoadStatus status,
         bool isToday)
@@ -421,56 +270,4 @@ public static class DayScheduleDisplayBuilder
     }
 
     private static readonly CultureInfo _culture = CultureInfo.GetCultureInfo("en-US");
-
-    private static EventAppearance MapAppearance(
-        CalendarParticipationStatus participationStatus)
-    {
-        return participationStatus switch
-        {
-            CalendarParticipationStatus.Accepted => EventAppearance.Accepted,
-            CalendarParticipationStatus.AwaitingResponse => EventAppearance.AwaitingResponse,
-            CalendarParticipationStatus.Tentative => EventAppearance.Tentative,
-            CalendarParticipationStatus.Declined => EventAppearance.Declined,
-            CalendarParticipationStatus.Cancelled => EventAppearance.Cancelled,
-            _ => EventAppearance.Accepted
-        };
-    }
-
-    private static string GetStatusLabel(CalendarParticipationStatus participationStatus)
-    {
-        return participationStatus switch
-        {
-            CalendarParticipationStatus.Accepted => "Confirmed",
-            CalendarParticipationStatus.AwaitingResponse => "Awaiting",
-            CalendarParticipationStatus.Tentative => "Maybe",
-            CalendarParticipationStatus.Declined => "Declined",
-            CalendarParticipationStatus.Cancelled => "Cancelled",
-            _ => "Confirmed"
-        };
-    }
-
-    private static string GetLeadingIcon(CalendarEventKind eventKind)
-    {
-        return eventKind switch
-        {
-            CalendarEventKind.Default => string.Empty,
-            CalendarEventKind.OutOfOffice => "⛔ ",
-            CalendarEventKind.FocusTime => "🎯 ",
-            CalendarEventKind.WorkingLocation => "📍 ",
-            CalendarEventKind.Task => "✓ ",
-            CalendarEventKind.AppointmentSchedule => "🗓 ",
-            _ => string.Empty
-        };
-    }
-
-    private sealed record LayoutCandidate(
-        string Title,
-        DateTimeOffset Start,
-        DateTimeOffset End,
-        string ScheduleText,
-        int HourHeight,
-        EventAppearance Appearance,
-        string StatusLabel,
-        string LeadingIcon,
-        EventDetailsDisplayState Details);
 }

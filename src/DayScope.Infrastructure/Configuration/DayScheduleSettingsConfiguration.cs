@@ -4,44 +4,38 @@ using DayScope.Domain.Configuration;
 
 namespace DayScope.Infrastructure.Configuration;
 
+/// <summary>
+/// Applies normalization and validation rules to <see cref="DayScheduleSettings"/>.
+/// </summary>
 public sealed class DayScheduleSettingsConfiguration :
     IPostConfigureOptions<DayScheduleSettings>,
     IValidateOptions<DayScheduleSettings>
 {
+    /// <summary>
+    /// Normalizes bound schedule settings after configuration binding.
+    /// </summary>
+    /// <param name="name">The options instance name.</param>
+    /// <param name="options">The options instance to normalize.</param>
     public void PostConfigure(string? name, DayScheduleSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        options.StartHour = Math.Clamp(options.StartHour, 0, 23);
-        options.EndHour = Math.Clamp(options.EndHour, 1, 24);
-        if (options.EndHour <= options.StartHour)
-        {
-            options.StartHour = 6;
-            options.EndHour = 20;
-        }
-
-        options.HourHeight = Math.Clamp(options.HourHeight, 40, 160);
-        options.ScheduleCanvasWidth = Math.Clamp(options.ScheduleCanvasWidth, 480, 1200);
-        options.PrimaryTimeZoneLabel = string.IsNullOrWhiteSpace(options.PrimaryTimeZoneLabel)
-            ? null
-            : options.PrimaryTimeZoneLabel.Trim();
-        options.SecondaryTimeZoneId = string.IsNullOrWhiteSpace(options.SecondaryTimeZoneId)
-            ? null
-            : options.SecondaryTimeZoneId.Trim();
-        options.SecondaryTimeZoneLabel = string.IsNullOrWhiteSpace(options.SecondaryTimeZoneLabel)
-            ? null
-            : options.SecondaryTimeZoneLabel.Trim();
+        options.Normalize();
     }
 
+    /// <summary>
+    /// Validates the normalized schedule settings.
+    /// </summary>
+    /// <param name="name">The options instance name.</param>
+    /// <param name="options">The options instance to validate.</param>
+    /// <returns>The validation result.</returns>
     public ValidateOptionsResult Validate(string? name, DayScheduleSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        if (options.EndHour <= options.StartHour)
-        {
-            return ValidateOptionsResult.Fail("DaySchedule:EndHour must be greater than StartHour.");
-        }
-
-        return ValidateOptionsResult.Success;
+        var failures = options.Validate();
+        return failures.Count > 0
+            ? ValidateOptionsResult.Fail(failures)
+            : ValidateOptionsResult.Success;
     }
 }
