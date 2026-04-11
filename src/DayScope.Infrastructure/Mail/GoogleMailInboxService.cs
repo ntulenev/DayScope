@@ -40,10 +40,10 @@ public sealed class GoogleMailInboxService : IEmailInboxService
             });
 
             var request = service.Users.Labels.Get(GMAIL_USER_ID, INBOX_LABEL_ID);
-            request.Fields = "messagesUnread";
+            request.Fields = "threadsUnread";
 
             var inboxLabel = await request.ExecuteAsync(cancellationToken);
-            return Math.Max(0, inboxLabel.MessagesUnread ?? 0);
+            return Math.Max(0, inboxLabel.ThreadsUnread ?? 0);
         }
         catch (GoogleApiException)
         {
