@@ -93,21 +93,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        try
-        {
-            Process.Start(new ProcessStartInfo(joinUrl.AbsoluteUri)
-            {
-                UseShellExecute = true
-            });
-        }
-        catch (InvalidOperationException)
-        {
-            // Ignore shell launch failures and keep the dialog open.
-        }
-        catch (Win32Exception)
-        {
-            // Ignore shell launch failures and keep the dialog open.
-        }
+        OpenUri(joinUrl);
+    }
+
+    private void OnOpenUnreadEmailsClick(object sender, RoutedEventArgs e)
+    {
+        OpenUri(_gmailInboxUri);
     }
 
     private void OnCopyEventLinkClick(object sender, RoutedEventArgs e)
@@ -181,6 +172,27 @@ public partial class MainWindow : Window
             sizeof(int));
     }
 
+    private static void OpenUri(Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore shell launch failures.
+        }
+        catch (Win32Exception)
+        {
+            // Ignore shell launch failures.
+        }
+    }
+
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(
         IntPtr hwnd,
@@ -189,6 +201,7 @@ public partial class MainWindow : Window
         int cbAttribute);
 
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    private static readonly Uri _gmailInboxUri = new("https://mail.google.com/mail/");
 
     private bool _allowClose;
     private readonly MainWindowViewModel _viewModel;

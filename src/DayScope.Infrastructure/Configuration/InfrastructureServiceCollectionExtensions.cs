@@ -6,6 +6,8 @@ using DayScope.Application.Abstractions;
 using DayScope.Domain.Configuration;
 using DayScope.Infrastructure.Calendar;
 using DayScope.Infrastructure.Clock;
+using DayScope.Infrastructure.Google;
+using DayScope.Infrastructure.Mail;
 
 namespace DayScope.Infrastructure.Configuration;
 
@@ -33,8 +35,10 @@ public static class InfrastructureServiceCollectionExtensions
             .Bind(configuration.GetSection("GoogleCalendar"))
             .ValidateOnStart();
 
+        services.AddSingleton<GoogleCredentialProvider>();
         services.AddSingleton<IClockService, SystemClockService>();
         services.AddSingleton<ICalendarService, GoogleCalendarService>();
+        services.AddSingleton<IEmailInboxService, GoogleMailInboxService>();
 
         return services;
     }

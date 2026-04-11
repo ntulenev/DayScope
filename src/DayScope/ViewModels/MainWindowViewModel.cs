@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Threading;
 
+using DayScope.Application.Abstractions;
 using DayScope.Application.Calendar;
 using DayScope.Application.Dashboard;
 using DayScope.Application.DaySchedule;
@@ -10,11 +12,15 @@ namespace DayScope.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
-    public MainWindowViewModel(DayScheduleDashboardService dashboardService)
+    public MainWindowViewModel(
+        DayScheduleDashboardService dashboardService,
+        IEmailInboxService emailInboxService)
     {
         ArgumentNullException.ThrowIfNull(dashboardService);
+        ArgumentNullException.ThrowIfNull(emailInboxService);
 
         _dashboardService = dashboardService;
+        _emailInboxService = emailInboxService;
         PrimaryTimelineHours = new ReadOnlyObservableCollection<TimelineHourDisplayState>(_primaryTimelineHoursSource);
         SecondaryTimelineHours = new ReadOnlyObservableCollection<TimelineHourDisplayState>(_secondaryTimelineHoursSource);
         AllDayEvents = new ReadOnlyObservableCollection<AllDayEventDisplayState>(_allDayEventsSource);
@@ -31,7 +37,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         _clockTimer.Tick += (_, _) => ApplyDisplayState(
             _dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
-        _calendarTimer.Tick += async (_, _) => await RefreshCalendarAsync(CalendarInteractionMode.Background);
+        _calendarTimer.Tick += async (_, _) => await RefreshDashboardAsync(CalendarInteractionMode.Background);
     }
 
     public ReadOnlyObservableCollection<TimelineHourDisplayState> PrimaryTimelineHours { get; }
@@ -74,6 +80,28 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool ShowNowLine { get; private set => SetProperty(ref field, value); }
 
+    public int? UnreadEmailCount => _unreadEmailCount;
+
+    public string UnreadEmailCountText => _unreadEmailCount switch
+    {
+        null => "--",
+        > 99 => "99+",
+        _ => _unreadEmailCount.Value.ToString(CultureInfo.InvariantCulture)
+    };
+
+    public bool HasUnreadEmails => _unreadEmailCount is > 0;
+
+    public string UnreadEmailSummaryText => _unreadEmailCount switch
+    {
+        null => "Open Gmail inbox",
+        0 => "Inbox is clear",
+        1 => "1 unread email",
+        _ => string.Format(
+            CultureInfo.InvariantCulture,
+            "{0} unread emails",
+            _unreadEmailCount.Value)
+    };
+
     public EventDetailsDisplayState? SelectedEventDetails => _selectedEventDetails;
 
     public bool IsEventDetailsOpen => SelectedEventDetails is not null;
@@ -97,19 +125,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public async Task InitializeAsync()
     {
-        ApplyDisplayState(await _dashboardService.RefreshCalendarAsync(
-            CalendarInteractionMode.Interactive,
-            _availableScheduleWidth,
-            CancellationToken.None));
+        await RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
         _clockTimer.Start();
-        if (_dashboardService.IsCalendarEnabled)
+        if (_dashboardService.IsCalendarEnabled || _emailInboxService.IsEnabled)
         {
             _calendarTimer.Start();
         }
     }
 
-    public Task RefreshNowAsync() => RefreshCalendarAsync(CalendarInteractionMode.Interactive);
+    public Task RefreshNowAsync() => RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
     public void OpenEventDetails(object? eventState)
     {
@@ -131,17 +156,27 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _calendarTimer.Stop();
     }
 
-    private async Task RefreshCalendarAsync(CalendarInteractionMode interactionMode)
+    private async Task RefreshDashboardAsync(CalendarInteractionMode interactionMode)
     {
         _calendarTimer.Stop();
-        ApplyDisplayState(await _dashboardService.RefreshCalendarAsync(
-            interactionMode,
-            _availableScheduleWidth,
-            CancellationToken.None));
 
-        if (_dashboardService.IsCalendarEnabled)
+        try
         {
-            _calendarTimer.Start();
+            ApplyDisplayState(await _dashboardService.RefreshCalendarAsync(
+                interactionMode,
+                _availableScheduleWidth,
+                CancellationToken.None));
+
+            await RefreshUnreadEmailCountAsync(
+                interactionMode == CalendarInteractionMode.Interactive,
+                CancellationToken.None);
+        }
+        finally
+        {
+            if (_dashboardService.IsCalendarEnabled || _emailInboxService.IsEnabled)
+            {
+                _calendarTimer.Start();
+            }
         }
     }
 
@@ -211,6 +246,27 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         return new GridLength(width);
     }
 
+    private async Task RefreshUnreadEmailCountAsync(
+        bool allowInteractiveAuthentication,
+        CancellationToken cancellationToken)
+    {
+        SetUnreadEmailCount(await _emailInboxService.GetUnreadEmailCountAsync(
+            allowInteractiveAuthentication,
+            cancellationToken));
+    }
+
+    private void SetUnreadEmailCount(int? unreadEmailCount)
+    {
+        if (!SetProperty(ref _unreadEmailCount, unreadEmailCount, nameof(UnreadEmailCount)))
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(UnreadEmailCountText));
+        OnPropertyChanged(nameof(HasUnreadEmails));
+        OnPropertyChanged(nameof(UnreadEmailSummaryText));
+    }
+
     private void SetSelectedEventDetails(EventDetailsDisplayState? details)
     {
         if (!SetProperty(ref _selectedEventDetails, details, nameof(SelectedEventDetails)))
@@ -231,8 +287,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly ObservableCollection<TimelineHourDisplayState> _secondaryTimelineHoursSource = [];
     private readonly ObservableCollection<AllDayEventDisplayState> _allDayEventsSource = [];
     private readonly ObservableCollection<TimedEventDisplayState> _timedEventsSource = [];
+    private readonly IEmailInboxService _emailInboxService;
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _calendarTimer;
     private double _availableScheduleWidth = 860;
+    private int? _unreadEmailCount;
     private EventDetailsDisplayState? _selectedEventDetails;
 }

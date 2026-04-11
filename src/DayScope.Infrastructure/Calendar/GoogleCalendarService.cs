@@ -1,13 +1,10 @@
 using System.Globalization;
 
 using Google;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
-using Google.Apis.Util.Store;
 
 using Microsoft.Extensions.Options;
 
@@ -15,20 +12,24 @@ using DayScope.Application.Abstractions;
 using DayScope.Application.Calendar;
 using DayScope.Domain.Calendar;
 using DayScope.Domain.Configuration;
-using DayScope.Infrastructure.Configuration;
+using DayScope.Infrastructure.Google;
 
 namespace DayScope.Infrastructure.Calendar;
 
 public sealed class GoogleCalendarService : ICalendarService
 {
-    public GoogleCalendarService(IOptions<GoogleCalendarSettings> settings)
+    public GoogleCalendarService(
+        IOptions<GoogleCalendarSettings> settings,
+        GoogleCredentialProvider credentialProvider)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(credentialProvider);
 
         _settings = settings.Value;
+        _credentialProvider = credentialProvider;
     }
 
-    public bool IsEnabled => _settings.Enabled;
+    public bool IsEnabled => _credentialProvider.IsEnabled;
 
     public async Task<CalendarLoadResult> GetEventsForDateAsync(
         DateOnly day,
@@ -43,26 +44,29 @@ public sealed class GoogleCalendarService : ICalendarService
             return CalendarLoadResult.FromStatus(CalendarLoadStatus.Disabled);
         }
 
-        var clientSecretsPath = PathResolver.ResolvePath(_settings.ClientSecretsPath);
-        if (string.IsNullOrWhiteSpace(clientSecretsPath) || !File.Exists(clientSecretsPath))
+        var credentialResult = await _credentialProvider.GetCredentialAsync(
+            interactionMode == CalendarInteractionMode.Interactive,
+            cancellationToken);
+        if (credentialResult.Status == GoogleCredentialLoadStatus.Disabled)
+        {
+            return CalendarLoadResult.FromStatus(CalendarLoadStatus.Disabled);
+        }
+
+        if (credentialResult.Status == GoogleCredentialLoadStatus.ClientSecretsMissing)
         {
             return CalendarLoadResult.FromStatus(CalendarLoadStatus.ClientSecretsMissing);
         }
 
+        if (credentialResult.Credential is null)
+        {
+            return CalendarLoadResult.FromStatus(CalendarLoadStatus.AuthorizationRequired);
+        }
+
         try
         {
-            using var stream = File.OpenRead(clientSecretsPath);
-            var clientSecrets = GoogleClientSecrets.FromStream(stream).Secrets;
-            var flow = CreateAuthorizationFlow(clientSecrets);
-            var credential = await GetCredentialAsync(flow, interactionMode, cancellationToken);
-            if (credential is null)
-            {
-                return CalendarLoadResult.FromStatus(CalendarLoadStatus.AuthorizationRequired);
-            }
-
             var service = new CalendarService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = credentialResult.Credential,
                 ApplicationName = "DayScope"
             });
 
@@ -110,54 +114,6 @@ public sealed class GoogleCalendarService : ICalendarService
         {
             return CalendarLoadResult.FromStatus(CalendarLoadStatus.Unavailable);
         }
-    }
-
-    private GoogleAuthorizationCodeFlow CreateAuthorizationFlow(ClientSecrets clientSecrets)
-    {
-        var initializer = new GoogleAuthorizationCodeFlow.Initializer
-        {
-            ClientSecrets = clientSecrets,
-            DataStore = new FileDataStore(GetTokenStoreDirectory(), true),
-            Scopes = _scopes,
-            LoginHint = string.IsNullOrWhiteSpace(_settings.LoginHint) ? null : _settings.LoginHint,
-            Prompt = _settings.ForceAccountSelection ? "select_account" : null
-        };
-
-        return new PkceGoogleAuthorizationCodeFlow(initializer);
-    }
-
-    private static async Task<UserCredential?> GetCredentialAsync(
-        GoogleAuthorizationCodeFlow flow,
-        CalendarInteractionMode interactionMode,
-        CancellationToken cancellationToken)
-    {
-        if (interactionMode == CalendarInteractionMode.Interactive)
-        {
-            var authApp = new AuthorizationCodeInstalledApp(flow, new LocalServerCodeReceiver());
-            return await authApp.AuthorizeAsync(TOKEN_STORE_USER_ID, cancellationToken);
-        }
-
-        var token = await flow.LoadTokenAsync(TOKEN_STORE_USER_ID, cancellationToken);
-        return token is null
-            ? null
-            : new UserCredential(flow, TOKEN_STORE_USER_ID, token);
-    }
-
-    private string GetTokenStoreDirectory()
-    {
-        var configuredPath = PathResolver.ResolvePath(_settings.TokenStoreDirectory);
-        if (!string.IsNullOrWhiteSpace(configuredPath))
-        {
-            Directory.CreateDirectory(configuredPath);
-            return configuredPath;
-        }
-
-        var fallbackPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "DayScope",
-            "GoogleCalendarToken");
-        Directory.CreateDirectory(fallbackPath);
-        return fallbackPath;
     }
 
     private static CalendarEvent? MapEvent(
@@ -327,11 +283,6 @@ public sealed class GoogleCalendarService : ICalendarService
         return new DateTimeOffset(dateTime, timeZone.GetUtcOffset(dateTime));
     }
 
-    private const string TOKEN_STORE_USER_ID = "dayscope-google-calendar";
-    private static readonly string[] _scopes =
-    [
-        CalendarService.Scope.CalendarReadonly
-    ];
-
     private readonly GoogleCalendarSettings _settings;
+    private readonly GoogleCredentialProvider _credentialProvider;
 }
