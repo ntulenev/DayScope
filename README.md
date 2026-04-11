@@ -2,7 +2,7 @@
 
 DayScope is a lightweight Windows desktop dashboard for a focused day view of your Google schedule.
 
-It pulls events from Google Calendar, lays them out on a clean day timeline, highlights all-day events, shows attendance state, and can display a secondary time zone alongside the main schedule. It also shows unread Gmail inbox count for the authenticated Google account and provides quick links into Gmail and Google Calendar.
+It pulls events from Google Calendar, lays them out on a clean day timeline, highlights all-day events, shows attendance state, and can display a secondary time zone alongside the main schedule. It also shows unread Gmail inbox count for the authenticated Google account, provides quick links into Gmail and Google Calendar, and supports selectable app themes.
 
 The app is designed to stay out of the way: it starts as a small desktop companion and can be hidden to the system tray, where you can reopen it, trigger a manual refresh, or exit.
 
@@ -14,6 +14,7 @@ The app is designed to stay out of the way: it starts as a small desktop compani
 - All-day event strip
 - Event status styling for confirmed, tentative, declined, cancelled, and awaiting response
 - Day navigation with previous / next controls
+- Theme switching from the tray menu with OS, Light, Dark, Forest, and Dark Pink options
 - Click the day header to open Google Calendar for the selected day
 - Click the unread email badge to open Gmail for the authenticated account
 - Event details modal with description, participants, and meeting links
@@ -67,6 +68,10 @@ Important settings:
 
 Default local paths use `%LocalAppData%\DayScope`.
 
+Theme preference is stored at:
+
+- `%LocalAppData%\DayScope\preferences.json`
+
 ## Google Setup
 
 1. Create an OAuth client in Google Cloud for a desktop application.
@@ -107,6 +112,7 @@ Example of the running app:
 - Closing the window hides it to the system tray instead of exiting.
 - Double-click the tray icon or use `Open` to show the window again.
 - Use `Refresh now` in the tray menu to trigger a manual refresh.
+- Use `Theme` in the tray menu to switch between OS, Light, Dark, Forest, and Dark Pink.
 - Use `Exit` in the tray menu to fully close the application.
 
 ## Purpose
