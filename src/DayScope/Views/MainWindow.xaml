@@ -733,14 +733,17 @@
         </Border>
 
         <Grid Grid.RowSpan="3"
+              Margin="-18"
               Panel.ZIndex="20"
               Visibility="{Binding IsEventDetailsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
             <Border Background="{DynamicResource OverlayBrush}"
+                    CornerRadius="24"
                     MouseLeftButtonUp="OnEventDetailsOverlayMouseLeftButtonUp" />
 
             <Border Width="520"
                     MaxWidth="520"
                     MaxHeight="620"
+                    Margin="24"
                     Padding="18"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
