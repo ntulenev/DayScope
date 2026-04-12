@@ -1,13 +1,11 @@
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Input;
-using System.Runtime.InteropServices;
 using System.ComponentModel;
-using System.Diagnostics;
 
 using Microsoft.Extensions.Options;
 
 using DayScope.Domain.Configuration;
+using DayScope.Platform;
 using DayScope.Themes;
 using DayScope.ViewModels;
 
@@ -24,19 +22,31 @@ public partial class MainWindow : Window
     /// <param name="viewModel">The dashboard view model bound to the window.</param>
     /// <param name="themeManager">The theme manager used to update window chrome.</param>
     /// <param name="windowOptions">The configured window sizing options.</param>
+    /// <param name="uriLauncher">The service used to open external links.</param>
+    /// <param name="clipboardService">The service used to copy text to the clipboard.</param>
+    /// <param name="windowChromeController">The controller used to update native window chrome.</param>
     public MainWindow(
         MainWindowViewModel viewModel,
         ThemeManager themeManager,
-        IOptions<WindowSettings> windowOptions)
+        IOptions<WindowSettings> windowOptions,
+        IUriLauncher uriLauncher,
+        IClipboardService clipboardService,
+        IWindowChromeController windowChromeController)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(themeManager);
         ArgumentNullException.ThrowIfNull(windowOptions);
+        ArgumentNullException.ThrowIfNull(uriLauncher);
+        ArgumentNullException.ThrowIfNull(clipboardService);
+        ArgumentNullException.ThrowIfNull(windowChromeController);
 
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
         _themeManager = themeManager;
+        _uriLauncher = uriLauncher;
+        _clipboardService = clipboardService;
+        _windowChromeController = windowChromeController;
         ApplyWindowSettings(windowOptions.Value);
         SourceInitialized += (_, _) => ApplyWindowTitleBarTheme();
         SizeChanged += (_, _) => UpdateScheduleWidth();
@@ -143,12 +153,12 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnOpenEventLinkClick(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedEventDetails?.JoinUrl is not Uri joinUrl)
+        if (_viewModel.EventDetails.SelectedEventDetails?.JoinUrl is not Uri joinUrl)
         {
             return;
         }
 
-        OpenUri(joinUrl);
+        _uriLauncher.Open(joinUrl);
     }
 
     /// <summary>
@@ -158,7 +168,7 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnOpenUnreadEmailsClick(object sender, RoutedEventArgs e)
     {
-        OpenUri(_viewModel.UnreadEmailInboxUri);
+        _uriLauncher.Open(_viewModel.Inbox.UnreadEmailInboxUri);
     }
 
     /// <summary>
@@ -168,7 +178,7 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnOpenGoogleCalendarClick(object sender, RoutedEventArgs e)
     {
-        OpenUri(_viewModel.GoogleCalendarUri);
+        _uriLauncher.Open(_viewModel.Inbox.GoogleCalendarUri);
     }
 
     /// <summary>
@@ -200,23 +210,12 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnCopyEventLinkClick(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedEventDetails?.JoinUrl is not Uri joinUrl)
+        if (_viewModel.EventDetails.SelectedEventDetails?.JoinUrl is not Uri joinUrl)
         {
             return;
         }
 
-        try
-        {
-            System.Windows.Clipboard.SetText(joinUrl.AbsoluteUri);
-        }
-        catch (COMException)
-        {
-            // Ignore clipboard access failures and keep the dialog open.
-        }
-        catch (ExternalException)
-        {
-            // Ignore clipboard access failures and keep the dialog open.
-        }
+        _ = _clipboardService.TrySetText(joinUrl.AbsoluteUri);
     }
 
     /// <summary>
@@ -248,7 +247,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void ScrollScheduleToNowLine()
     {
-        var targetOffset = Math.Max(0, _viewModel.NowLineTop - 280);
+        var targetOffset = Math.Max(0, _viewModel.Schedule.NowLineTop - 280);
         SmoothScrollBehavior.ScrollToOffset(ScheduleScrollViewer, targetOffset);
     }
 
@@ -283,63 +282,13 @@ public partial class MainWindow : Window
     /// </summary>
     private void ApplyWindowTitleBarTheme()
     {
-        var windowHandle = new WindowInteropHelper(this).Handle;
-        if (windowHandle == IntPtr.Zero)
-        {
-            return;
-        }
-
-        var enabled = _themeManager.IsDarkTheme ? 1 : 0;
-        _ = DwmSetWindowAttribute(
-            windowHandle,
-            DWMWA_USE_IMMERSIVE_DARK_MODE,
-            ref enabled,
-            sizeof(int));
+        _windowChromeController.ApplyTitleBarTheme(this, _themeManager.IsDarkTheme);
     }
-
-    /// <summary>
-    /// Opens a URI through the system shell.
-    /// </summary>
-    /// <param name="uri">The URI to open.</param>
-    private static void OpenUri(Uri uri)
-    {
-        ArgumentNullException.ThrowIfNull(uri);
-
-        try
-        {
-            Process.Start(new ProcessStartInfo(uri.AbsoluteUri)
-            {
-                UseShellExecute = true
-            });
-        }
-        catch (InvalidOperationException)
-        {
-            // Ignore shell launch failures.
-        }
-        catch (Win32Exception)
-        {
-            // Ignore shell launch failures.
-        }
-    }
-
-    /// <summary>
-    /// Sets a DWM window attribute for the native window handle.
-    /// </summary>
-    /// <param name="hwnd">The target window handle.</param>
-    /// <param name="dwAttribute">The DWM attribute identifier.</param>
-    /// <param name="pvAttribute">The attribute value.</param>
-    /// <param name="cbAttribute">The size of the attribute value.</param>
-    /// <returns>The native HRESULT.</returns>
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(
-        IntPtr hwnd,
-        int dwAttribute,
-        ref int pvAttribute,
-        int cbAttribute);
-
-    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
     private bool _allowClose;
     private readonly ThemeManager _themeManager;
     private readonly MainWindowViewModel _viewModel;
+    private readonly IUriLauncher _uriLauncher;
+    private readonly IClipboardService _clipboardService;
+    private readonly IWindowChromeController _windowChromeController;
 }

@@ -237,10 +237,10 @@
             <Setter Property="Background" Value="{DynamicResource UnreadBadgeBrush}" />
             <Setter Property="CornerRadius" Value="10" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding UnreadEmailCount}" Value="{x:Null}">
+                <DataTrigger Binding="{Binding Inbox.UnreadEmailCount}" Value="{x:Null}">
                     <Setter Property="Background" Value="{DynamicResource UnreadBadgeUnknownBrush}" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding HasUnreadEmails}" Value="True">
+                <DataTrigger Binding="{Binding Inbox.HasUnreadEmails}" Value="True">
                     <Setter Property="Background" Value="{DynamicResource AccentDangerBrush}" />
                 </DataTrigger>
             </Style.Triggers>
@@ -274,13 +274,13 @@
                            FontSize="22"
                            FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
-                           Text="{Binding MonthTitle}" />
+                           Text="{Binding Schedule.MonthTitle}" />
                 <TextBlock Margin="0,6,0,0"
                            FontFamily="{StaticResource UiFont}"
                            FontSize="13"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextSecondaryBrush}"
-                           Text="{Binding DateText}" />
+                           Text="{Binding Schedule.DateText}" />
             </StackPanel>
 
             <StackPanel Grid.Column="1"
@@ -320,7 +320,7 @@
                                    FontSize="16"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Text="{Binding DayTitle}" />
+                                   Text="{Binding Schedule.DayTitle}" />
 
                         <Border Grid.Column="2"
                                 Width="22"
@@ -335,7 +335,7 @@
                                        Foreground="White"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
-                                       Text="{Binding DayNumberText}" />
+                                       Text="{Binding Schedule.DayNumberText}" />
                         </Border>
                     </Grid>
                 </Button>
@@ -357,7 +357,7 @@
             <Button Grid.Column="2"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    ToolTip="{Binding UnreadEmailSummaryText}"
+                        ToolTip="{Binding Inbox.UnreadEmailSummaryText}"
                     Style="{StaticResource HeaderShortcutButtonStyle}"
                     Click="OnOpenUnreadEmailsClick">
                 <Grid>
@@ -388,7 +388,7 @@
                                    Foreground="White"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
-                                   Text="{Binding UnreadEmailCountText}" />
+                                   Text="{Binding Inbox.UnreadEmailCountText}" />
                     </Border>
                 </Grid>
             </Button>
@@ -397,9 +397,9 @@
         <Grid Grid.Row="1"
               Margin="0,16,0,8">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="{Binding PrimaryTimeColumnWidth}" />
+                    <ColumnDefinition Width="{Binding Schedule.PrimaryTimeColumnWidth}" />
                 <ColumnDefinition Width="8" />
-                <ColumnDefinition Width="{Binding SecondaryTimeColumnWidth}" />
+                    <ColumnDefinition Width="{Binding Schedule.SecondaryTimeColumnWidth}" />
                 <ColumnDefinition Width="8" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -407,12 +407,12 @@
             <TextBlock Grid.Column="0"
                        Style="{StaticResource HourLabelStyle}"
                        TextTrimming="CharacterEllipsis"
-                       Text="{Binding PrimaryTimeZoneLabel}" />
+                               Text="{Binding Schedule.PrimaryTimeZoneLabel}" />
 
             <TextBlock Grid.Column="2"
                        Style="{StaticResource HourLabelStyle}"
                        TextTrimming="CharacterEllipsis"
-                       Text="{Binding SecondaryTimeZoneLabel}"
+                               Text="{Binding Schedule.SecondaryTimeZoneLabel}"
                        Visibility="{Binding HasSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}" />
 
             <TextBlock Grid.Column="4"
@@ -443,9 +443,9 @@
 
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="{Binding PrimaryTimeColumnWidth}" />
+                    <ColumnDefinition Width="{Binding Schedule.PrimaryTimeColumnWidth}" />
                             <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="{Binding SecondaryTimeColumnWidth}" />
+                    <ColumnDefinition Width="{Binding Schedule.SecondaryTimeColumnWidth}" />
                             <ColumnDefinition Width="8" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
@@ -458,7 +458,7 @@
                                 BorderThickness="1"
                                 CornerRadius="10">
                             <Grid>
-                                <ItemsControl ItemsSource="{Binding AllDayEvents}">
+                        <ItemsControl ItemsSource="{Binding Schedule.AllDayEvents}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <WrapPanel />
@@ -514,7 +514,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding AllDayEvents.Count}" Value="0">
+                                            <DataTrigger Binding="{Binding Schedule.AllDayEvents.Count}" Value="0">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -528,16 +528,16 @@
                     <Grid Grid.Row="1"
                           Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="{Binding PrimaryTimeColumnWidth}" />
+                    <ColumnDefinition Width="{Binding Schedule.PrimaryTimeColumnWidth}" />
                             <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="{Binding SecondaryTimeColumnWidth}" />
+                    <ColumnDefinition Width="{Binding Schedule.SecondaryTimeColumnWidth}" />
                             <ColumnDefinition Width="8" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
                         <ItemsControl Grid.Column="0"
-                                      Height="{Binding TimelineHeight}"
-                                      ItemsSource="{Binding PrimaryTimelineHours}">
+                              Height="{Binding Schedule.TimelineHeight}"
+                              ItemsSource="{Binding Schedule.PrimaryTimelineHours}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <Canvas />
@@ -557,8 +557,8 @@
                         </ItemsControl>
 
                         <ItemsControl Grid.Column="2"
-                                      Height="{Binding TimelineHeight}"
-                                      ItemsSource="{Binding SecondaryTimelineHours}"
+                              Height="{Binding Schedule.TimelineHeight}"
+                              ItemsSource="{Binding Schedule.SecondaryTimelineHours}"
                                       Visibility="{Binding HasSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -581,15 +581,15 @@
                         <Border x:Name="ScheduleSurfaceBorder"
                                 Grid.Column="4"
                                 MinWidth="420"
-                                Height="{Binding TimelineHeight}"
+                              Height="{Binding Schedule.TimelineHeight}"
                                 Background="{DynamicResource ScheduleSurfaceBackgroundBrush}"
                                 BorderBrush="{DynamicResource ScheduleSurfaceBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12">
                             <Grid>
-                                <ItemsControl Height="{Binding TimelineHeight}"
-                                              Width="{Binding ScheduleCanvasWidth}"
-                                              ItemsSource="{Binding PrimaryTimelineHours}">
+                                <ItemsControl Height="{Binding Schedule.TimelineHeight}"
+                                              Width="{Binding Schedule.ScheduleCanvasWidth}"
+                                              ItemsSource="{Binding Schedule.PrimaryTimelineHours}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <Canvas />
@@ -602,16 +602,16 @@
                                     </ItemsControl.ItemContainerStyle>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Width="{Binding DataContext.ScheduleCanvasWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            <Border Width="{Binding DataContext.Schedule.ScheduleCanvasWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     Height="1"
                                                     Background="{DynamicResource ScheduleSurfaceBorderBrush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <ItemsControl Height="{Binding TimelineHeight}"
-                                              Width="{Binding ScheduleCanvasWidth}"
-                                              ItemsSource="{Binding TimedEvents}">
+                                <ItemsControl Height="{Binding Schedule.TimelineHeight}"
+                                              Width="{Binding Schedule.ScheduleCanvasWidth}"
+                                              ItemsSource="{Binding Schedule.TimedEvents}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <Canvas />
@@ -702,13 +702,13 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <Canvas Width="{Binding ScheduleCanvasWidth}"
-                                        Height="{Binding TimelineHeight}"
-                                        Visibility="{Binding ShowNowLine, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <Border Width="{Binding DataContext.ScheduleCanvasWidth, RelativeSource={RelativeSource AncestorType=Canvas}}"
+                                <Canvas Width="{Binding Schedule.ScheduleCanvasWidth}"
+                                        Height="{Binding Schedule.TimelineHeight}"
+                                        Visibility="{Binding Schedule.ShowNowLine, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Border Width="{Binding DataContext.Schedule.ScheduleCanvasWidth, RelativeSource={RelativeSource AncestorType=Canvas}}"
                                             Height="2"
                                             Background="{DynamicResource NowLineBrush}"
-                                            Canvas.Top="{Binding NowLineTop}" />
+                                            Canvas.Top="{Binding Schedule.NowLineTop}" />
                                 </Canvas>
 
                                 <Border Width="320"
@@ -719,12 +719,12 @@
                                         BorderBrush="{DynamicResource BorderSubtleBrush}"
                                         BorderThickness="1"
                                         CornerRadius="12"
-                                        Visibility="{Binding ShowStatus, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        Visibility="{Binding Schedule.ShowStatus, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <TextBlock FontFamily="{StaticResource UiFont}"
                                                FontSize="12"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource StatusTextBrush}"
-                                               Text="{Binding StatusText}"
+                                               Text="{Binding Schedule.StatusText}"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap" />
                                 </Border>
@@ -738,7 +738,7 @@
         <Grid Grid.RowSpan="3"
               Margin="-18"
               Panel.ZIndex="20"
-              Visibility="{Binding IsEventDetailsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+              Visibility="{Binding EventDetails.IsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
             <Border Background="{DynamicResource OverlayBrush}"
                     CornerRadius="24"
                     MouseLeftButtonUp="OnEventDetailsOverlayMouseLeftButtonUp" />
@@ -774,21 +774,21 @@
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        TextWrapping="Wrap"
                                        MaxWidth="420">
-                                <Run Text="{Binding SelectedEventDetails.LeadingIcon}" />
-                                <Run Text="{Binding SelectedEventDetails.Title}" />
+                                <Run Text="{Binding EventDetails.SelectedEventDetails.LeadingIcon}" />
+                                <Run Text="{Binding EventDetails.SelectedEventDetails.Title}" />
                             </TextBlock>
                             <TextBlock Margin="0,8,0,0"
                                        FontFamily="{StaticResource UiFont}"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource ModalSecondaryTextBrush}"
-                                       Text="{Binding SelectedEventDetails.ScheduleText}" />
+                                       Text="{Binding EventDetails.SelectedEventDetails.ScheduleText}" />
                             <Border Margin="0,10,0,0"
                                     Padding="8,3"
                                     HorizontalAlignment="Left"
                                     CornerRadius="7"
                                     Style="{StaticResource EventBadgeStyle}"
-                                    DataContext="{Binding SelectedEventDetails}">
+                                    DataContext="{Binding EventDetails.SelectedEventDetails}">
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="10"
                                            FontWeight="Bold"
@@ -826,7 +826,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <StackPanel Margin="0,0,0,16"
-                                        Visibility="{Binding HasSelectedEventOrganizer, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        Visibility="{Binding EventDetails.HasOrganizer, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
@@ -836,11 +836,11 @@
                                            FontFamily="{StaticResource UiFont}"
                                            FontSize="13"
                                            Foreground="{DynamicResource BodyTextBrush}"
-                                           Text="{Binding SelectedEventDetails.Organizer}" />
+                                           Text="{Binding EventDetails.SelectedEventDetails.Organizer}" />
                             </StackPanel>
 
                             <StackPanel Margin="0,0,0,16"
-                                        Visibility="{Binding HasSelectedEventDescription, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        Visibility="{Binding EventDetails.HasDescription, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
@@ -855,20 +855,20 @@
                                     <TextBlock FontFamily="{StaticResource UiFont}"
                                                FontSize="13"
                                                Foreground="{DynamicResource ModalInsetTextBrush}"
-                                               view:HtmlTextBlock.Html="{Binding SelectedEventDetails.Description}"
+                                               view:HtmlTextBlock.Html="{Binding EventDetails.SelectedEventDetails.Description}"
                                                TextWrapping="Wrap" />
                                 </Border>
                             </StackPanel>
 
                             <StackPanel Margin="0,0,0,16"
-                                        Visibility="{Binding HasSelectedEventParticipants, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        Visibility="{Binding EventDetails.HasParticipants, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
                                            Foreground="{DynamicResource SectionLabelBrush}"
                                            Text="Participants" />
                                 <ItemsControl Margin="0,8,0,0"
-                                              ItemsSource="{Binding SelectedEventDetails.Participants}">
+                                              ItemsSource="{Binding EventDetails.SelectedEventDetails.Participants}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Border Margin="0,0,0,8"
@@ -912,7 +912,7 @@
                                 </ItemsControl>
                             </StackPanel>
 
-                            <StackPanel Visibility="{Binding HasSelectedEventJoinUrl, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel Visibility="{Binding EventDetails.HasJoinUrl, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
                                            FontWeight="Bold"
@@ -922,7 +922,7 @@
                                     <TextBlock FontFamily="{StaticResource UiFont}"
                                                FontSize="12"
                                                Foreground="{DynamicResource BodySubtleTextBrush}"
-                                               Text="{Binding SelectedEventDetails.JoinUrl}"
+                                               Text="{Binding EventDetails.SelectedEventDetails.JoinUrl}"
                                                TextTrimming="CharacterEllipsis" />
                                     <StackPanel Margin="0,12,0,0"
                                                 Orientation="Horizontal">
@@ -931,7 +931,7 @@
                                                 VerticalAlignment="Top"
                                                 Style="{StaticResource ModalActionButtonStyle}"
                                                 Click="OnOpenEventLinkClick"
-                                                Content="{Binding SelectedEventJoinLabel}" />
+                                                Content="{Binding EventDetails.JoinLabel}" />
                                         <Button Margin="0,0,0,10"
                                                 HorizontalAlignment="Left"
                                                 VerticalAlignment="Top"

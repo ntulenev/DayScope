@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
+using DayScope.Platform;
 using DayScope.Shell;
 using DayScope.Themes;
 using DayScope.Threading;
@@ -27,7 +28,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IThemeResourceApplier, ApplicationThemeResourceApplier>();
         services.AddSingleton<ThemeManager>();
         services.AddSingleton<TrayIconController>();
+        services.AddSingleton<IUriLauncher, ShellUriLauncher>();
+        services.AddSingleton<IClipboardService, WpfClipboardService>();
+        services.AddSingleton<IWindowChromeController, WindowChromeController>();
         services.AddSingleton<IUiDispatcherTimerFactory, DispatcherTimerFactory>();
+        services.AddSingleton<MainWindowDashboardCoordinator>();
+        services.AddSingleton<MainWindowInboxState>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
 
