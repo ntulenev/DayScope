@@ -16,6 +16,9 @@ namespace DayScope.Views;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private readonly MainWindowShellController _shellController;
+    private readonly MainWindowThemeController _themeController;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
     /// </summary>
@@ -43,20 +46,16 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
-        _themeManager = themeManager;
         _uriLauncher = uriLauncher;
         _clipboardService = clipboardService;
-        _windowChromeController = windowChromeController;
-        ApplyWindowSettings(windowOptions.Value);
-        SourceInitialized += (_, _) => ApplyWindowTitleBarTheme();
-        SizeChanged += (_, _) => UpdateScheduleWidth();
+        _shellController = new MainWindowShellController();
+        _themeController = new MainWindowThemeController(themeManager, windowChromeController);
+
+        MainWindowShellController.ApplyWindowSettings(this, windowOptions.Value);
+        _themeController.Attach(this);
+        SizeChanged += OnSizeChanged;
         Closing += OnClosing;
-        Closed += (_, _) =>
-        {
-            _themeManager.ThemeChanged -= OnThemeChanged;
-            _viewModel.Dispose();
-        };
-        _themeManager.ThemeChanged += OnThemeChanged;
+        Closed += OnClosed;
     }
 
     /// <summary>
@@ -74,16 +73,7 @@ public partial class MainWindow : Window
     /// </summary>
     public void ShowFromTray()
     {
-        Show();
-        WindowState = WindowState.Normal;
-        Activate();
-        Topmost = true;
-        Topmost = false;
-        Focus();
-
-        UpdateLayout();
-        UpdateScheduleWidth();
-        ScrollScheduleToNowLine();
+        MainWindowShellController.ShowFromTray(this, OnShownFromTray);
     }
 
     /// <summary>
@@ -91,7 +81,7 @@ public partial class MainWindow : Window
     /// </summary>
     public void HideToTray()
     {
-        Hide();
+        MainWindowShellController.HideToTray(this);
     }
 
     /// <summary>
@@ -105,8 +95,7 @@ public partial class MainWindow : Window
     /// </summary>
     public void CloseFromTray()
     {
-        _allowClose = true;
-        Close();
+        _shellController.CloseFromTray(this);
     }
 
     /// <summary>
@@ -219,27 +208,14 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Applies configured size constraints to the window.
-    /// </summary>
-    /// <param name="settings">The window settings to apply.</param>
-    private void ApplyWindowSettings(WindowSettings settings)
-    {
-        Width = settings.Width;
-        Height = settings.Height;
-        MinWidth = settings.MinWidth;
-        MinHeight = settings.MinHeight;
-    }
-
-    /// <summary>
     /// Recalculates the available width for the schedule surface.
     /// </summary>
     private void UpdateScheduleWidth()
     {
-        var availableWidth = ScheduleSurfaceBorder.ActualWidth > 0
-            ? ScheduleSurfaceBorder.ActualWidth - 18
-            : ActualWidth - 280;
-
-        _viewModel.UpdateAvailableScheduleWidth(availableWidth);
+        MainWindowViewportController.UpdateAvailableScheduleWidth(
+            _viewModel,
+            ScheduleSurfaceBorder,
+            ActualWidth);
     }
 
     /// <summary>
@@ -247,8 +223,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void ScrollScheduleToNowLine()
     {
-        var targetOffset = Math.Max(0, _viewModel.Schedule.NowLineTop - 280);
-        SmoothScrollBehavior.ScrollToOffset(ScheduleScrollViewer, targetOffset);
+        MainWindowViewportController.ScrollToNowLine(_viewModel, ScheduleScrollViewer);
     }
 
     /// <summary>
@@ -258,37 +233,41 @@ public partial class MainWindow : Window
     /// <param name="e">The cancel event arguments.</param>
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_allowClose)
-        {
-            return;
-        }
-
-        e.Cancel = true;
-        HideToTray();
+        _shellController.HandleClosing(this, e);
     }
 
     /// <summary>
-    /// Reapplies title bar chrome when the theme changes.
+    /// Recalculates layout-dependent viewport values after the window size changes.
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="e">The event arguments.</param>
-    private void OnThemeChanged(object? sender, EventArgs e)
+    private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        Dispatcher.Invoke(ApplyWindowTitleBarTheme);
+        UpdateScheduleWidth();
     }
 
     /// <summary>
-    /// Applies the dark-mode title bar preference to the native window handle.
+    /// Applies post-show layout updates after the tray restores the main window.
     /// </summary>
-    private void ApplyWindowTitleBarTheme()
+    private void OnShownFromTray()
     {
-        _windowChromeController.ApplyTitleBarTheme(this, _themeManager.IsDarkTheme);
+        UpdateLayout();
+        UpdateScheduleWidth();
+        ScrollScheduleToNowLine();
     }
 
-    private bool _allowClose;
-    private readonly ThemeManager _themeManager;
+    /// <summary>
+    /// Releases window-scoped controllers and the bound view model when the window closes.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The event arguments.</param>
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _themeController.Detach(this);
+        _viewModel.Dispose();
+    }
+
     private readonly MainWindowViewModel _viewModel;
     private readonly IUriLauncher _uriLauncher;
     private readonly IClipboardService _clipboardService;
-    private readonly IWindowChromeController _windowChromeController;
 }
