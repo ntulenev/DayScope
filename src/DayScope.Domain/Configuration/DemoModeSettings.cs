@@ -12,10 +12,7 @@ public sealed class DemoModeSettings
     /// <summary>
     /// Normalizes demo mode values into supported ranges.
     /// </summary>
-    public void Normalize()
-    {
-        UnreadEmailCount = Math.Max(0, UnreadEmailCount);
-    }
+    public void Normalize() => UnreadEmailCount = Math.Max(0, UnreadEmailCount);
 
     /// <summary>
     /// Validates the current demo mode settings.

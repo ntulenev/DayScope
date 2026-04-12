@@ -86,15 +86,12 @@ public sealed record CalendarEvent
     /// <returns><see langword="true"/> when the event overlaps the range; otherwise <see langword="false"/>.</returns>
     public bool Intersects(DateTimeOffset rangeStart, DateTimeOffset rangeEnd)
     {
-        if (rangeEnd <= rangeStart)
-        {
-            throw new ArgumentOutOfRangeException(
+        return rangeEnd <= rangeStart
+            ? throw new ArgumentOutOfRangeException(
                 nameof(rangeEnd),
                 rangeEnd,
-                "Range end must be greater than range start.");
-        }
-
-        return Start < rangeEnd && EffectiveEnd > rangeStart;
+                "Range end must be greater than range start.")
+            : Start < rangeEnd && EffectiveEnd > rangeStart;
     }
 
     /// <summary>
@@ -151,14 +148,11 @@ public sealed record CalendarEvent
         DateTimeOffset start,
         bool isAllDay)
     {
-        if (end is null)
-        {
-            return null;
-        }
-
-        return end > start
+        return end is not null
+            ? end > start
             ? end
-            : start.Add(GetDefaultDuration(isAllDay));
+            : start.Add(GetDefaultDuration(isAllDay))
+            : null;
     }
 
     /// <summary>
