@@ -140,6 +140,7 @@ public sealed class ThemeManager : IDisposable
                 EffectiveTheme.Forest => _forestThemeUri,
                 EffectiveTheme.Autumn => _autumnThemeUri,
                 EffectiveTheme.DarkPink => _darkPinkThemeUri,
+                EffectiveTheme.Matrix => _matrixThemeUri,
                 EffectiveTheme.Dark => _darkThemeUri,
                 _ => _darkThemeUri
             }
@@ -164,6 +165,7 @@ public sealed class ThemeManager : IDisposable
             AppThemeMode.Forest => EffectiveTheme.Forest,
             AppThemeMode.Autumn => EffectiveTheme.Autumn,
             AppThemeMode.DarkPink => EffectiveTheme.DarkPink,
+            AppThemeMode.Matrix => EffectiveTheme.Matrix,
             _ => ResolveOsTheme()
         };
     }
@@ -197,6 +199,7 @@ public sealed class ThemeManager : IDisposable
     private readonly Uri _forestThemeUri = new("Themes/ForestTheme.xaml", UriKind.Relative);
     private readonly Uri _autumnThemeUri = new("Themes/AutumnTheme.xaml", UriKind.Relative);
     private readonly Uri _darkPinkThemeUri = new("Themes/DarkPinkTheme.xaml", UriKind.Relative);
+    private readonly Uri _matrixThemeUri = new("Themes/MatrixTheme.xaml", UriKind.Relative);
     private ResourceDictionary? _themeDictionary;
     private EffectiveTheme _effectiveTheme = EffectiveTheme.Dark;
     private bool _isInitialized;
@@ -210,6 +213,7 @@ public sealed class ThemeManager : IDisposable
         Dark = 1,
         Forest = 2,
         Autumn = 3,
-        DarkPink = 4
+        DarkPink = 4,
+        Matrix = 5
     }
 }

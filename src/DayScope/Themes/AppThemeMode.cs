@@ -33,5 +33,10 @@ public enum AppThemeMode
     /// <summary>
     /// Uses the dark pink bordo-inspired palette.
     /// </summary>
-    DarkPink = 5
+    DarkPink = 5,
+
+    /// <summary>
+    /// Uses a Matrix-inspired neon green dark palette.
+    /// </summary>
+    Matrix = 6
 }
