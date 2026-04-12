@@ -84,6 +84,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddSingleton<IDemoAgendaFactory, DemoAgendaFactory>();
         services.AddSingleton<ICalendarService, DemoCalendarService>();
         services.AddSingleton<IEmailInboxService, DemoEmailInboxService>();
 
