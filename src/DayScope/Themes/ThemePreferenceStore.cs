@@ -7,7 +7,7 @@ namespace DayScope.Themes;
 /// <summary>
 /// Persists the user's selected application theme in local app data.
 /// </summary>
-public sealed class ThemePreferenceStore
+public sealed class ThemePreferenceStore : IThemePreferenceStore
 {
     /// <summary>
     /// Loads the last saved theme mode.

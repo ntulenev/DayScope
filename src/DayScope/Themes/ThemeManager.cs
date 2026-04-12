@@ -1,7 +1,3 @@
-using System.Windows;
-using System.IO;
-using System.Security;
-
 using Microsoft.Win32;
 
 namespace DayScope.Themes;
@@ -24,7 +20,7 @@ public sealed class ThemeManager : IDisposable
     /// <summary>
     /// Gets a value indicating whether the currently applied theme should use dark window chrome.
     /// </summary>
-    public bool IsDarkTheme => _effectiveTheme != EffectiveTheme.Light;
+    public bool IsDarkTheme => _appliedThemeMode != AppThemeMode.Light;
 
     /// <summary>
     /// Initializes the theme manager and applies the persisted theme selection.
@@ -81,11 +77,20 @@ public sealed class ThemeManager : IDisposable
     /// Creates a theme manager that uses the provided preference store.
     /// </summary>
     /// <param name="preferenceStore">The store used to load and save the selected theme.</param>
-    public ThemeManager(ThemePreferenceStore preferenceStore)
+    /// <param name="osThemeDetector">The detector used to resolve the current OS theme.</param>
+    /// <param name="themeResourceApplier">The applier used to update WPF theme resources.</param>
+    public ThemeManager(
+        IThemePreferenceStore preferenceStore,
+        IOsThemeDetector osThemeDetector,
+        IThemeResourceApplier themeResourceApplier)
     {
         ArgumentNullException.ThrowIfNull(preferenceStore);
+        ArgumentNullException.ThrowIfNull(osThemeDetector);
+        ArgumentNullException.ThrowIfNull(themeResourceApplier);
 
         _preferenceStore = preferenceStore;
+        _osThemeDetector = osThemeDetector;
+        _themeResourceApplier = themeResourceApplier;
     }
 
     /// <summary>
@@ -114,40 +119,19 @@ public sealed class ThemeManager : IDisposable
     /// <param name="force">Whether the theme should be applied even when unchanged.</param>
     private void ApplyTheme(bool force)
     {
-        if (System.Windows.Application.Current is not { Resources: var resources })
-        {
-            return;
-        }
-
-        var effectiveTheme = ResolveEffectiveTheme();
+        var appliedThemeMode = ResolveAppliedThemeMode();
         if (!force &&
-            _themeDictionary is not null &&
-            effectiveTheme == _effectiveTheme)
+            appliedThemeMode == _appliedThemeMode)
         {
             return;
         }
 
-        if (_themeDictionary is not null)
+        if (!_themeResourceApplier.ApplyTheme(appliedThemeMode))
         {
-            resources.MergedDictionaries.Remove(_themeDictionary);
+            return;
         }
 
-        _themeDictionary = new ResourceDictionary
-        {
-            Source = effectiveTheme switch
-            {
-                EffectiveTheme.Light => _lightThemeUri,
-                EffectiveTheme.Forest => _forestThemeUri,
-                EffectiveTheme.Autumn => _autumnThemeUri,
-                EffectiveTheme.DarkPink => _darkPinkThemeUri,
-                EffectiveTheme.Matrix => _matrixThemeUri,
-                EffectiveTheme.Dark => _darkThemeUri,
-                _ => _darkThemeUri
-            }
-        };
-
-        resources.MergedDictionaries.Insert(0, _themeDictionary);
-        _effectiveTheme = effectiveTheme;
+        _appliedThemeMode = appliedThemeMode;
         ThemeChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -155,65 +139,24 @@ public sealed class ThemeManager : IDisposable
     /// Resolves the effective theme after considering OS mode and explicit selection.
     /// </summary>
     /// <returns>The theme that should be applied.</returns>
-    private EffectiveTheme ResolveEffectiveTheme()
+    private AppThemeMode ResolveAppliedThemeMode()
     {
         return SelectedMode switch
         {
-            AppThemeMode.Os => ResolveOsTheme(),
-            AppThemeMode.Light => EffectiveTheme.Light,
-            AppThemeMode.Dark => EffectiveTheme.Dark,
-            AppThemeMode.Forest => EffectiveTheme.Forest,
-            AppThemeMode.Autumn => EffectiveTheme.Autumn,
-            AppThemeMode.DarkPink => EffectiveTheme.DarkPink,
-            AppThemeMode.Matrix => EffectiveTheme.Matrix,
-            _ => ResolveOsTheme()
+            AppThemeMode.Os => _osThemeDetector.DetectThemeMode(),
+            AppThemeMode.Light => AppThemeMode.Light,
+            AppThemeMode.Dark => AppThemeMode.Dark,
+            AppThemeMode.Forest => AppThemeMode.Forest,
+            AppThemeMode.Autumn => AppThemeMode.Autumn,
+            AppThemeMode.DarkPink => AppThemeMode.DarkPink,
+            AppThemeMode.Matrix => AppThemeMode.Matrix,
+            _ => _osThemeDetector.DetectThemeMode()
         };
     }
 
-    /// <summary>
-    /// Resolves the current Windows app theme preference.
-    /// </summary>
-    /// <returns>The effective theme derived from Windows settings.</returns>
-    private static EffectiveTheme ResolveOsTheme()
-    {
-        try
-        {
-            var registryValue = Registry.GetValue(
-                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
-                "AppsUseLightTheme",
-                0);
-
-            return registryValue is int intValue && intValue > 0
-                ? EffectiveTheme.Light
-                : EffectiveTheme.Dark;
-        }
-        catch (Exception ex) when (ex is IOException or SecurityException or UnauthorizedAccessException)
-        {
-            return EffectiveTheme.Dark;
-        }
-    }
-
-    private readonly ThemePreferenceStore _preferenceStore;
-    private readonly Uri _darkThemeUri = new("Themes/DarkTheme.xaml", UriKind.Relative);
-    private readonly Uri _lightThemeUri = new("Themes/LightTheme.xaml", UriKind.Relative);
-    private readonly Uri _forestThemeUri = new("Themes/ForestTheme.xaml", UriKind.Relative);
-    private readonly Uri _autumnThemeUri = new("Themes/AutumnTheme.xaml", UriKind.Relative);
-    private readonly Uri _darkPinkThemeUri = new("Themes/DarkPinkTheme.xaml", UriKind.Relative);
-    private readonly Uri _matrixThemeUri = new("Themes/MatrixTheme.xaml", UriKind.Relative);
-    private ResourceDictionary? _themeDictionary;
-    private EffectiveTheme _effectiveTheme = EffectiveTheme.Dark;
+    private readonly IThemePreferenceStore _preferenceStore;
+    private readonly IOsThemeDetector _osThemeDetector;
+    private readonly IThemeResourceApplier _themeResourceApplier;
+    private AppThemeMode _appliedThemeMode = AppThemeMode.Dark;
     private bool _isInitialized;
-
-    /// <summary>
-    /// Represents the concrete resource dictionary theme applied to the app.
-    /// </summary>
-    private enum EffectiveTheme
-    {
-        Light = 0,
-        Dark = 1,
-        Forest = 2,
-        Autumn = 3,
-        DarkPink = 4,
-        Matrix = 5
-    }
 }

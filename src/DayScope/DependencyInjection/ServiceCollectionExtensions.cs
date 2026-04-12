@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
+using DayScope.Shell;
 using DayScope.Themes;
 using DayScope.Threading;
 using DayScope.ViewModels;
@@ -21,8 +22,11 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<ThemePreferenceStore>();
+        services.AddSingleton<IThemePreferenceStore, ThemePreferenceStore>();
+        services.AddSingleton<IOsThemeDetector, WindowsOsThemeDetector>();
+        services.AddSingleton<IThemeResourceApplier, ApplicationThemeResourceApplier>();
         services.AddSingleton<ThemeManager>();
+        services.AddSingleton<TrayIconController>();
         services.AddSingleton<IUiDispatcherTimerFactory, DispatcherTimerFactory>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
