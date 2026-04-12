@@ -68,10 +68,4 @@ public sealed class ThemePreferenceStore : IThemePreferenceStore
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DayScope",
         "preferences.json");
-
-    /// <summary>
-    /// Represents the serialized theme preference payload.
-    /// </summary>
-    /// <param name="ThemeMode">The persisted theme mode.</param>
-    private sealed record ThemePreferencesDocument(AppThemeMode ThemeMode);
 }
