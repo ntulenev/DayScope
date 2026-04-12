@@ -138,6 +138,7 @@ public sealed class ThemeManager : IDisposable
             {
                 EffectiveTheme.Light => _lightThemeUri,
                 EffectiveTheme.Forest => _forestThemeUri,
+                EffectiveTheme.Autumn => _autumnThemeUri,
                 EffectiveTheme.DarkPink => _darkPinkThemeUri,
                 EffectiveTheme.Dark => _darkThemeUri,
                 _ => _darkThemeUri
@@ -161,6 +162,7 @@ public sealed class ThemeManager : IDisposable
             AppThemeMode.Light => EffectiveTheme.Light,
             AppThemeMode.Dark => EffectiveTheme.Dark,
             AppThemeMode.Forest => EffectiveTheme.Forest,
+            AppThemeMode.Autumn => EffectiveTheme.Autumn,
             AppThemeMode.DarkPink => EffectiveTheme.DarkPink,
             _ => ResolveOsTheme()
         };
@@ -193,6 +195,7 @@ public sealed class ThemeManager : IDisposable
     private readonly Uri _darkThemeUri = new("Themes/DarkTheme.xaml", UriKind.Relative);
     private readonly Uri _lightThemeUri = new("Themes/LightTheme.xaml", UriKind.Relative);
     private readonly Uri _forestThemeUri = new("Themes/ForestTheme.xaml", UriKind.Relative);
+    private readonly Uri _autumnThemeUri = new("Themes/AutumnTheme.xaml", UriKind.Relative);
     private readonly Uri _darkPinkThemeUri = new("Themes/DarkPinkTheme.xaml", UriKind.Relative);
     private ResourceDictionary? _themeDictionary;
     private EffectiveTheme _effectiveTheme = EffectiveTheme.Dark;
@@ -206,6 +209,7 @@ public sealed class ThemeManager : IDisposable
         Light = 0,
         Dark = 1,
         Forest = 2,
-        DarkPink = 3
+        Autumn = 3,
+        DarkPink = 4
     }
 }

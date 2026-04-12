@@ -126,6 +126,9 @@ public partial class App : System.Windows.Application
         _themeForestMenuItem = new System.Windows.Forms.ToolStripMenuItem("Forest");
         _themeForestMenuItem.Click += (_, _) => Dispatcher.Invoke(() => SetThemeMode(AppThemeMode.Forest));
 
+        _themeAutumnMenuItem = new System.Windows.Forms.ToolStripMenuItem("Autumn");
+        _themeAutumnMenuItem.Click += (_, _) => Dispatcher.Invoke(() => SetThemeMode(AppThemeMode.Autumn));
+
         _themeDarkPinkMenuItem = new System.Windows.Forms.ToolStripMenuItem("Dark Pink");
         _themeDarkPinkMenuItem.Click += (_, _) => Dispatcher.Invoke(() => SetThemeMode(AppThemeMode.DarkPink));
 
@@ -134,6 +137,7 @@ public partial class App : System.Windows.Application
         themeMenuItem.DropDownItems.Add(_themeLightMenuItem);
         themeMenuItem.DropDownItems.Add(_themeDarkMenuItem);
         themeMenuItem.DropDownItems.Add(_themeForestMenuItem);
+        themeMenuItem.DropDownItems.Add(_themeAutumnMenuItem);
         themeMenuItem.DropDownItems.Add(_themeDarkPinkMenuItem);
 
         var exitItem = new System.Windows.Forms.ToolStripMenuItem("Exit");
@@ -245,6 +249,7 @@ public partial class App : System.Windows.Application
             _themeLightMenuItem is null ||
             _themeDarkMenuItem is null ||
             _themeForestMenuItem is null ||
+            _themeAutumnMenuItem is null ||
             _themeDarkPinkMenuItem is null)
         {
             return;
@@ -254,6 +259,7 @@ public partial class App : System.Windows.Application
         _themeLightMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Light;
         _themeDarkMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Dark;
         _themeForestMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Forest;
+        _themeAutumnMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Autumn;
         _themeDarkPinkMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.DarkPink;
     }
 
@@ -278,5 +284,6 @@ public partial class App : System.Windows.Application
     private System.Windows.Forms.ToolStripMenuItem? _themeLightMenuItem;
     private System.Windows.Forms.ToolStripMenuItem? _themeDarkMenuItem;
     private System.Windows.Forms.ToolStripMenuItem? _themeForestMenuItem;
+    private System.Windows.Forms.ToolStripMenuItem? _themeAutumnMenuItem;
     private System.Windows.Forms.ToolStripMenuItem? _themeDarkPinkMenuItem;
 }

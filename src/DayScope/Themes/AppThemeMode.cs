@@ -26,7 +26,12 @@ public enum AppThemeMode
     Forest = 3,
 
     /// <summary>
+    /// Uses a warm autumn-inspired dark palette.
+    /// </summary>
+    Autumn = 4,
+
+    /// <summary>
     /// Uses the dark pink bordo-inspired palette.
     /// </summary>
-    DarkPink = 4
+    DarkPink = 5
 }
