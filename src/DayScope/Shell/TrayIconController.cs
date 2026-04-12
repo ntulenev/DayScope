@@ -59,71 +59,22 @@ public sealed class TrayIconController : IDisposable
             _trayIcon = null;
         }
 
-        DisposeMenuItem(ref _themeOsMenuItem);
-        DisposeMenuItem(ref _themeLightMenuItem);
-        DisposeMenuItem(ref _themeDarkMenuItem);
-        DisposeMenuItem(ref _themeForestMenuItem);
-        DisposeMenuItem(ref _themeAutumnMenuItem);
-        DisposeMenuItem(ref _themeDarkPinkMenuItem);
-        DisposeMenuItem(ref _themeMatrixMenuItem);
+        _contextMenu?.Dispose();
+        _contextMenu = null;
+        _themeMenuController = null;
 
         _isInitialized = false;
     }
 
     private void CreateTrayIcon()
     {
-        var openItem = new ToolStripMenuItem("Open");
-        openItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(ShowMainWindow);
-
-        var refreshItem = new ToolStripMenuItem("Refresh now");
-        refreshItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(BeginRefreshFromTray);
-
-        _themeOsMenuItem = new ToolStripMenuItem("OS");
-        _themeOsMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.Os));
-
-        _themeLightMenuItem = new ToolStripMenuItem("Light");
-        _themeLightMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.Light));
-
-        _themeDarkMenuItem = new ToolStripMenuItem("Dark");
-        _themeDarkMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.Dark));
-
-        _themeForestMenuItem = new ToolStripMenuItem("Forest");
-        _themeForestMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.Forest));
-
-        _themeAutumnMenuItem = new ToolStripMenuItem("Autumn");
-        _themeAutumnMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.Autumn));
-
-        _themeDarkPinkMenuItem = new ToolStripMenuItem("Dark Pink");
-        _themeDarkPinkMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.DarkPink));
-
-        _themeMatrixMenuItem = new ToolStripMenuItem("Matrix");
-        _themeMatrixMenuItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(
-            () => SetThemeMode(AppThemeMode.Matrix));
-
-        var themeMenuItem = new ToolStripMenuItem("Theme");
-        themeMenuItem.DropDownItems.Add(_themeOsMenuItem);
-        themeMenuItem.DropDownItems.Add(_themeLightMenuItem);
-        themeMenuItem.DropDownItems.Add(_themeDarkMenuItem);
-        themeMenuItem.DropDownItems.Add(_themeForestMenuItem);
-        themeMenuItem.DropDownItems.Add(_themeAutumnMenuItem);
-        themeMenuItem.DropDownItems.Add(_themeDarkPinkMenuItem);
-        themeMenuItem.DropDownItems.Add(_themeMatrixMenuItem);
-
-        var exitItem = new ToolStripMenuItem("Exit");
-        exitItem.Click += (_, _) => _mainWindow.Dispatcher.Invoke(ExitFromTray);
-
-        var menu = new ContextMenuStrip();
-        menu.Items.Add(openItem);
-        menu.Items.Add(refreshItem);
-        menu.Items.Add(themeMenuItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(exitItem);
+        var (menu, themeMenuController) = TrayMenuBuilder.Build(
+            () => _mainWindow.Dispatcher.Invoke(ShowMainWindow),
+            () => _mainWindow.Dispatcher.Invoke(BeginRefreshFromTray),
+            themeMode => _mainWindow.Dispatcher.Invoke(() => SetThemeMode(themeMode)),
+            () => _mainWindow.Dispatcher.Invoke(ExitFromTray));
+        _contextMenu = menu;
+        _themeMenuController = themeMenuController;
 
         _trayIcon = new NotifyIcon
         {
@@ -181,30 +132,7 @@ public sealed class TrayIconController : IDisposable
 
     private void UpdateThemeMenuSelection()
     {
-        if (_themeOsMenuItem is null ||
-            _themeLightMenuItem is null ||
-            _themeDarkMenuItem is null ||
-            _themeForestMenuItem is null ||
-            _themeAutumnMenuItem is null ||
-            _themeDarkPinkMenuItem is null ||
-            _themeMatrixMenuItem is null)
-        {
-            return;
-        }
-
-        _themeOsMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Os;
-        _themeLightMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Light;
-        _themeDarkMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Dark;
-        _themeForestMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Forest;
-        _themeAutumnMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Autumn;
-        _themeDarkPinkMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.DarkPink;
-        _themeMatrixMenuItem.Checked = _themeManager.SelectedMode == AppThemeMode.Matrix;
-    }
-
-    private static void DisposeMenuItem(ref ToolStripMenuItem? menuItem)
-    {
-        menuItem?.Dispose();
-        menuItem = null;
+        _themeMenuController?.UpdateSelection(_themeManager.SelectedMode);
     }
 
     private static System.Drawing.Icon ResolveTrayIcon()
@@ -219,12 +147,7 @@ public sealed class TrayIconController : IDisposable
     private readonly MainWindow _mainWindow;
     private readonly ThemeManager _themeManager;
     private NotifyIcon? _trayIcon;
-    private ToolStripMenuItem? _themeOsMenuItem;
-    private ToolStripMenuItem? _themeLightMenuItem;
-    private ToolStripMenuItem? _themeDarkMenuItem;
-    private ToolStripMenuItem? _themeForestMenuItem;
-    private ToolStripMenuItem? _themeAutumnMenuItem;
-    private ToolStripMenuItem? _themeDarkPinkMenuItem;
-    private ToolStripMenuItem? _themeMatrixMenuItem;
+    private ContextMenuStrip? _contextMenu;
+    private TrayThemeMenuController? _themeMenuController;
     private bool _isInitialized;
 }
