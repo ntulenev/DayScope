@@ -14,19 +14,19 @@ public sealed class GoogleMailInboxService : IEmailInboxService
     /// Initializes a new instance of the <see cref="GoogleMailInboxService"/> class.
     /// </summary>
     /// <param name="credentialProvider">The credential provider used to authorize API calls.</param>
-    /// <param name="googleApiClientFactory">The factory used to create configured Google SDK clients.</param>
+    /// <param name="mailInboxGateway">The gateway used to execute Gmail SDK requests.</param>
     /// <param name="workspaceUriBuilder">The builder used to create account-aware Gmail links.</param>
     public GoogleMailInboxService(
         IGoogleCredentialProvider credentialProvider,
-        IGoogleApiClientFactory googleApiClientFactory,
+        IGoogleMailInboxGateway mailInboxGateway,
         IGoogleWorkspaceUriBuilder workspaceUriBuilder)
     {
         ArgumentNullException.ThrowIfNull(credentialProvider);
-        ArgumentNullException.ThrowIfNull(googleApiClientFactory);
+        ArgumentNullException.ThrowIfNull(mailInboxGateway);
         ArgumentNullException.ThrowIfNull(workspaceUriBuilder);
 
         _credentialProvider = credentialProvider;
-        _googleApiClientFactory = googleApiClientFactory;
+        _mailInboxGateway = mailInboxGateway;
         _workspaceUriBuilder = workspaceUriBuilder;
     }
 
@@ -53,20 +53,12 @@ public sealed class GoogleMailInboxService : IEmailInboxService
 
         try
         {
-            var service = _googleApiClientFactory.CreateGmailService(
-                credentialResult.Credential);
-
-            var profileRequest = service.Users.GetProfile(GMAIL_USER_ID);
-            profileRequest.Fields = "emailAddress";
-            var profile = await profileRequest.ExecuteAsync(cancellationToken);
-
-            var request = service.Users.Labels.Get(GMAIL_USER_ID, INBOX_LABEL_ID);
-            request.Fields = "threadsUnread";
-
-            var inboxLabel = await request.ExecuteAsync(cancellationToken);
+            var inboxData = await _mailInboxGateway.GetInboxDataAsync(
+                credentialResult.Credential,
+                cancellationToken);
             return CreateSnapshot(
-                Math.Max(0, inboxLabel.ThreadsUnread ?? 0),
-                profile.EmailAddress);
+                inboxData.UnreadCount,
+                inboxData.EmailAddress);
         }
         catch (GoogleApiException)
         {
@@ -98,10 +90,7 @@ public sealed class GoogleMailInboxService : IEmailInboxService
             _workspaceUriBuilder.BuildInboxUri(normalizedEmailAddress));
     }
 
-    private const string GMAIL_USER_ID = "me";
-    private const string INBOX_LABEL_ID = "INBOX";
-
     private readonly IGoogleCredentialProvider _credentialProvider;
-    private readonly IGoogleApiClientFactory _googleApiClientFactory;
+    private readonly IGoogleMailInboxGateway _mailInboxGateway;
     private readonly IGoogleWorkspaceUriBuilder _workspaceUriBuilder;
 }

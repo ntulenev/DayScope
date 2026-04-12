@@ -106,6 +106,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IGoogleInteractiveCredentialAuthorizer, GoogleInstalledAppAuthorizer>();
         services.AddSingleton<IGoogleApiClientFactory, GoogleApiClientFactory>();
         services.AddSingleton<IGoogleCredentialProvider, GoogleCredentialProvider>();
+        services.AddSingleton<IGoogleCalendarGateway, GoogleCalendarGateway>();
+        services.AddSingleton<IGoogleCalendarEventMapper, GoogleCalendarEventMapper>();
+        services.AddSingleton<IGoogleCalendarFailureMapper, GoogleCalendarFailureMapper>();
+        services.AddSingleton<IGoogleMailInboxGateway, GoogleMailInboxGateway>();
         services.AddSingleton<ICalendarService, GoogleCalendarService>();
         services.AddSingleton<IEmailInboxService, GoogleMailInboxService>();
 
