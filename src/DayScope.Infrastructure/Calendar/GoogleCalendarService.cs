@@ -4,7 +4,6 @@ using Google;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
-using Google.Apis.Services;
 
 using Microsoft.Extensions.Options;
 
@@ -26,15 +25,19 @@ public sealed class GoogleCalendarService : ICalendarService
     /// </summary>
     /// <param name="settings">The configured Google integration settings.</param>
     /// <param name="credentialProvider">The credential provider used to authorize API calls.</param>
+    /// <param name="googleApiClientFactory">The factory used to create configured Google SDK clients.</param>
     public GoogleCalendarService(
         IOptions<GoogleCalendarSettings> settings,
-        GoogleCredentialProvider credentialProvider)
+        IGoogleCredentialProvider credentialProvider,
+        IGoogleApiClientFactory googleApiClientFactory)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(credentialProvider);
+        ArgumentNullException.ThrowIfNull(googleApiClientFactory);
 
         _settings = settings.Value;
         _credentialProvider = credentialProvider;
+        _googleApiClientFactory = googleApiClientFactory;
     }
 
     public bool IsEnabled => _credentialProvider.IsEnabled;
@@ -80,11 +83,8 @@ public sealed class GoogleCalendarService : ICalendarService
 
         try
         {
-            var service = new CalendarService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credentialResult.Credential,
-                ApplicationName = "DayScope"
-            });
+            var service = _googleApiClientFactory.CreateCalendarService(
+                credentialResult.Credential);
 
             var startOfDay = CreateDateTimeOffset(timeZone, day, 0);
             var startOfNextDay = CreateDateTimeOffset(timeZone, day.AddDays(1), 0);
@@ -335,5 +335,6 @@ public sealed class GoogleCalendarService : ICalendarService
     }
 
     private readonly GoogleCalendarSettings _settings;
-    private readonly GoogleCredentialProvider _credentialProvider;
+    private readonly IGoogleCredentialProvider _credentialProvider;
+    private readonly IGoogleApiClientFactory _googleApiClientFactory;
 }

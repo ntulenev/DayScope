@@ -1,6 +1,4 @@
 using Google;
-using Google.Apis.Gmail.v1;
-using Google.Apis.Services;
 
 using DayScope.Application.Abstractions;
 using DayScope.Infrastructure.Google;
@@ -16,15 +14,19 @@ public sealed class GoogleMailInboxService : IEmailInboxService
     /// Initializes a new instance of the <see cref="GoogleMailInboxService"/> class.
     /// </summary>
     /// <param name="credentialProvider">The credential provider used to authorize API calls.</param>
+    /// <param name="googleApiClientFactory">The factory used to create configured Google SDK clients.</param>
     /// <param name="workspaceUriBuilder">The builder used to create account-aware Gmail links.</param>
     public GoogleMailInboxService(
-        GoogleCredentialProvider credentialProvider,
+        IGoogleCredentialProvider credentialProvider,
+        IGoogleApiClientFactory googleApiClientFactory,
         IGoogleWorkspaceUriBuilder workspaceUriBuilder)
     {
         ArgumentNullException.ThrowIfNull(credentialProvider);
+        ArgumentNullException.ThrowIfNull(googleApiClientFactory);
         ArgumentNullException.ThrowIfNull(workspaceUriBuilder);
 
         _credentialProvider = credentialProvider;
+        _googleApiClientFactory = googleApiClientFactory;
         _workspaceUriBuilder = workspaceUriBuilder;
     }
 
@@ -51,11 +53,8 @@ public sealed class GoogleMailInboxService : IEmailInboxService
 
         try
         {
-            var service = new GmailService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credentialResult.Credential,
-                ApplicationName = "DayScope"
-            });
+            var service = _googleApiClientFactory.CreateGmailService(
+                credentialResult.Credential);
 
             var profileRequest = service.Users.GetProfile(GMAIL_USER_ID);
             profileRequest.Fields = "emailAddress";
@@ -102,6 +101,7 @@ public sealed class GoogleMailInboxService : IEmailInboxService
     private const string GMAIL_USER_ID = "me";
     private const string INBOX_LABEL_ID = "INBOX";
 
-    private readonly GoogleCredentialProvider _credentialProvider;
+    private readonly IGoogleCredentialProvider _credentialProvider;
+    private readonly IGoogleApiClientFactory _googleApiClientFactory;
     private readonly IGoogleWorkspaceUriBuilder _workspaceUriBuilder;
 }

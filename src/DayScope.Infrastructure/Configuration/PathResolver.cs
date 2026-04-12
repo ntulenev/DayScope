@@ -3,14 +3,14 @@ namespace DayScope.Infrastructure.Configuration;
 /// <summary>
 /// Resolves configured file-system paths relative to known application locations.
 /// </summary>
-internal static class PathResolver
+public sealed class PathResolver : IPathResolver
 {
     /// <summary>
     /// Resolves a configured path into an absolute file-system path when possible.
     /// </summary>
     /// <param name="configuredPath">The configured path value.</param>
     /// <returns>The resolved absolute path, or an empty string when the value is blank.</returns>
-    internal static string ResolvePath(string? configuredPath)
+    public string ResolvePath(string? configuredPath)
     {
         if (string.IsNullOrWhiteSpace(configuredPath))
         {

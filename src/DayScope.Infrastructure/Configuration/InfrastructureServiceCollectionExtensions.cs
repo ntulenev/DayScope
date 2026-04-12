@@ -68,6 +68,7 @@ public static class InfrastructureServiceCollectionExtensions
             .Bind(configuration.GetSection("GoogleCalendar"))
             .ValidateOnStart();
 
+        services.AddSingleton<IPathResolver, PathResolver>();
         services.AddSingleton<IClockService, SystemClockService>();
         services.AddSingleton<ILocalTimeZoneProvider, SystemTimeZoneProvider>();
 
@@ -98,7 +99,13 @@ public static class InfrastructureServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<GoogleCredentialProvider>();
+        services.AddSingleton<IGoogleClientSecretsLoader, GoogleClientSecretsLoader>();
+        services.AddSingleton<IGoogleTokenStoreDirectoryProvider, GoogleTokenStoreDirectoryProvider>();
+        services.AddSingleton<IGoogleAuthorizationCodeFlowFactory, GoogleAuthorizationCodeFlowFactory>();
+        services.AddSingleton<IGoogleStoredCredentialLoader, GoogleStoredCredentialLoader>();
+        services.AddSingleton<IGoogleInteractiveCredentialAuthorizer, GoogleInstalledAppAuthorizer>();
+        services.AddSingleton<IGoogleApiClientFactory, GoogleApiClientFactory>();
+        services.AddSingleton<IGoogleCredentialProvider, GoogleCredentialProvider>();
         services.AddSingleton<ICalendarService, GoogleCalendarService>();
         services.AddSingleton<IEmailInboxService, GoogleMailInboxService>();
 
