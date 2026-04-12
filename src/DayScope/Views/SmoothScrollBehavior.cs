@@ -1,8 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
-
 namespace DayScope.Views;
 
 /// <summary>
@@ -40,10 +38,10 @@ public static class SmoothScrollBehavior
             typeof(SmoothScrollBehavior),
             new PropertyMetadata(TimeSpan.FromMilliseconds(220)));
 
-    private static readonly DependencyProperty _scrollStateProperty =
+    private static readonly DependencyProperty _scrollAnimatorProperty =
         DependencyProperty.RegisterAttached(
-            "ScrollState",
-            typeof(ScrollState),
+            "ScrollAnimator",
+            typeof(SmoothScrollAnimator),
             typeof(SmoothScrollBehavior),
             new PropertyMetadata(null));
 
@@ -128,15 +126,14 @@ public static class SmoothScrollBehavior
     {
         ArgumentNullException.ThrowIfNull(scrollViewer);
 
-        targetOffset = ClampOffset(scrollViewer, targetOffset);
+        targetOffset = Math.Clamp(targetOffset, 0, scrollViewer.ScrollableHeight);
         if (!GetIsEnabled(scrollViewer))
         {
             scrollViewer.ScrollToVerticalOffset(targetOffset);
             return;
         }
 
-        var state = GetOrCreateState(scrollViewer);
-        StartAnimation(scrollViewer, state, targetOffset);
+        GetOrCreateAnimator(scrollViewer).ScrollToOffset(targetOffset);
     }
 
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -151,7 +148,7 @@ public static class SmoothScrollBehavior
             scrollViewer.PreviewMouseWheel += OnPreviewMouseWheel;
             scrollViewer.ScrollChanged += OnScrollChanged;
             scrollViewer.Unloaded += OnUnloaded;
-            SyncState(scrollViewer, GetOrCreateState(scrollViewer));
+            GetOrCreateAnimator(scrollViewer).SyncToViewer();
             return;
         }
 
@@ -159,10 +156,10 @@ public static class SmoothScrollBehavior
         scrollViewer.ScrollChanged -= OnScrollChanged;
         scrollViewer.Unloaded -= OnUnloaded;
 
-        if (scrollViewer.GetValue(_scrollStateProperty) is ScrollState state)
+        if (scrollViewer.GetValue(_scrollAnimatorProperty) is SmoothScrollAnimator animator)
         {
-            state.Stop();
-            scrollViewer.ClearValue(_scrollStateProperty);
+            animator.Stop();
+            scrollViewer.ClearValue(_scrollAnimatorProperty);
         }
     }
 
@@ -173,24 +170,20 @@ public static class SmoothScrollBehavior
             return;
         }
 
-        var state = GetOrCreateState(scrollViewer);
         var offsetChange = -(e.Delta / MOUSE_WHEEL_DELTA_PER_STEP) * GetWheelStep(scrollViewer);
-        var targetOffset = ClampOffset(scrollViewer, state.TargetOffset + offsetChange);
-        if (Math.Abs(targetOffset - state.TargetOffset) < MINIMUM_OFFSET_CHANGE &&
-            Math.Abs(targetOffset - scrollViewer.VerticalOffset) < MINIMUM_OFFSET_CHANGE)
+        if (!GetOrCreateAnimator(scrollViewer).TryScrollBy(offsetChange, MINIMUM_OFFSET_CHANGE))
         {
             return;
         }
 
-        StartAnimation(scrollViewer, state, targetOffset);
         e.Handled = true;
     }
 
     private static void OnScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         if (sender is not ScrollViewer scrollViewer ||
-            scrollViewer.GetValue(_scrollStateProperty) is not ScrollState state ||
-            state.IsAnimatingScroll)
+            scrollViewer.GetValue(_scrollAnimatorProperty) is not SmoothScrollAnimator animator ||
+            animator.IsApplyingScroll)
         {
             return;
         }
@@ -202,148 +195,32 @@ public static class SmoothScrollBehavior
             return;
         }
 
-        SyncState(scrollViewer, state);
+        animator.SyncToViewer();
     }
 
     private static void OnUnloaded(object sender, RoutedEventArgs e)
     {
         if (sender is ScrollViewer scrollViewer &&
-            scrollViewer.GetValue(_scrollStateProperty) is ScrollState state)
+            scrollViewer.GetValue(_scrollAnimatorProperty) is SmoothScrollAnimator animator)
         {
-            state.Stop();
+            animator.Stop();
         }
     }
 
-    private static ScrollState GetOrCreateState(ScrollViewer scrollViewer)
+    private static SmoothScrollAnimator GetOrCreateAnimator(ScrollViewer scrollViewer)
     {
-        if (scrollViewer.GetValue(_scrollStateProperty) is ScrollState existingState)
+        if (scrollViewer.GetValue(_scrollAnimatorProperty) is SmoothScrollAnimator existingAnimator)
         {
-            return existingState;
+            return existingAnimator;
         }
 
-        var newState = new ScrollState(scrollViewer);
-        scrollViewer.SetValue(_scrollStateProperty, newState);
-        return newState;
-    }
-
-    private static void StartAnimation(ScrollViewer scrollViewer, ScrollState state, double targetOffset)
-    {
-        state.StartOffset = scrollViewer.VerticalOffset;
-        state.TargetOffset = ClampOffset(scrollViewer, targetOffset);
-        state.Start();
-    }
-
-    private static void SyncState(ScrollViewer scrollViewer, ScrollState state)
-    {
-        state.Stop();
-        state.StartOffset = scrollViewer.VerticalOffset;
-        state.TargetOffset = scrollViewer.VerticalOffset;
-    }
-
-    private static double ClampOffset(ScrollViewer scrollViewer, double offset)
-    {
-        return Math.Clamp(offset, 0, scrollViewer.ScrollableHeight);
-    }
-
-    private static double EaseOutCubic(double progress)
-    {
-        return 1 - Math.Pow(1 - progress, 3);
+        var newAnimator = new SmoothScrollAnimator(
+            scrollViewer,
+            () => GetAnimationDuration(scrollViewer));
+        scrollViewer.SetValue(_scrollAnimatorProperty, newAnimator);
+        return newAnimator;
     }
 
     private const double MOUSE_WHEEL_DELTA_PER_STEP = 120d;
     private const double MINIMUM_OFFSET_CHANGE = 0.1d;
-
-    /// <summary>
-    /// Stores smooth-scrolling state for one <see cref="ScrollViewer"/>.
-    /// </summary>
-    private sealed class ScrollState
-    {
-        private readonly ScrollViewer _scrollViewer;
-        private readonly DispatcherTimer _timer;
-        private DateTime _animationStartedAtUtc;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ScrollState"/> class.
-        /// </summary>
-        /// <param name="scrollViewer">The associated scroll viewer.</param>
-        public ScrollState(ScrollViewer scrollViewer)
-        {
-            _scrollViewer = scrollViewer;
-            _timer = new DispatcherTimer(DispatcherPriority.Render, scrollViewer.Dispatcher)
-            {
-                Interval = TimeSpan.FromMilliseconds(16)
-            };
-
-            _timer.Tick += OnTick;
-            StartOffset = scrollViewer.VerticalOffset;
-            TargetOffset = scrollViewer.VerticalOffset;
-        }
-
-        /// <summary>
-        /// Gets or sets the animation start offset.
-        /// </summary>
-        public double StartOffset { get; set; }
-
-        /// <summary>
-        /// Gets or sets the target animation offset.
-        /// </summary>
-        public double TargetOffset { get; set; }
-
-        /// <summary>
-        /// Gets a value indicating whether the behavior is currently applying a scroll update.
-        /// </summary>
-        public bool IsAnimatingScroll { get; private set; }
-
-        /// <summary>
-        /// Starts the active animation from the current viewer offset.
-        /// </summary>
-        public void Start()
-        {
-            _animationStartedAtUtc = DateTime.UtcNow;
-            if (!_timer.IsEnabled)
-            {
-                _timer.Start();
-            }
-        }
-
-        /// <summary>
-        /// Stops the active animation if one is running.
-        /// </summary>
-        public void Stop()
-        {
-            _timer.Stop();
-        }
-
-        private void OnTick(object? sender, EventArgs e)
-        {
-            var duration = GetAnimationDuration(_scrollViewer);
-            if (duration <= TimeSpan.Zero)
-            {
-                ApplyOffset(TargetOffset);
-                Stop();
-                return;
-            }
-
-            var elapsed = DateTime.UtcNow - _animationStartedAtUtc;
-            var progress = Math.Clamp(elapsed.TotalMilliseconds / duration.TotalMilliseconds, 0d, 1d);
-            var easedProgress = EaseOutCubic(progress);
-            var currentOffset = StartOffset + ((TargetOffset - StartOffset) * easedProgress);
-
-            ApplyOffset(currentOffset);
-            if (progress < 1d)
-            {
-                return;
-            }
-
-            StartOffset = TargetOffset;
-            Stop();
-        }
-
-        private void ApplyOffset(double offset)
-        {
-            IsAnimatingScroll = true;
-            _scrollViewer.ScrollToVerticalOffset(offset);
-            IsAnimatingScroll = false;
-        }
-    }
 }
