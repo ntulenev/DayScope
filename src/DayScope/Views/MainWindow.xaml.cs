@@ -249,7 +249,7 @@ public partial class MainWindow : Window
     private void ScrollScheduleToNowLine()
     {
         var targetOffset = Math.Max(0, _viewModel.NowLineTop - 280);
-        ScheduleScrollViewer.ScrollToVerticalOffset(targetOffset);
+        SmoothScrollBehavior.ScrollToOffset(ScheduleScrollViewer, targetOffset);
     }
 
     /// <summary>

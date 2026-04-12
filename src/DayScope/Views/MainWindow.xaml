@@ -429,6 +429,9 @@
                 BorderThickness="1"
                 CornerRadius="20">
             <ScrollViewer x:Name="ScheduleScrollViewer"
+                          view:SmoothScrollBehavior.IsEnabled="True"
+                          view:SmoothScrollBehavior.WheelStep="88.1"
+                          view:SmoothScrollBehavior.AnimationDuration="0:0:0.22"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
                           Padding="12,12,10,16">
@@ -814,6 +817,9 @@
                     </Grid>
 
                     <ScrollViewer Grid.Row="1"
+                                  view:SmoothScrollBehavior.IsEnabled="True"
+                                  view:SmoothScrollBehavior.WheelStep="88.1"
+                                  view:SmoothScrollBehavior.AnimationDuration="0:0:0.22"
                                   Margin="0,18,0,0"
                                   Focusable="False"
                                   FocusVisualStyle="{x:Null}"

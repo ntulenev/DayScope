@@ -38,7 +38,8 @@ public static class DayScheduleDisplayBuilder
         var labelReferenceInstant = CreateDateTimeOffset(localZone, selectedDate, 12);
         var timelineStart = CreateDateTimeOffset(localZone, selectedDate, settings.StartHour);
         var timelineEnd = CreateDateTimeOffset(localZone, selectedDate, settings.EndHour);
-        var timelineHeight = (settings.EndHour - settings.StartHour) * settings.HourHeight;
+        var timelineHeight = ((settings.EndHour - settings.StartHour) * settings.HourHeight)
+            + TIMELINE_BOTTOM_PADDING;
         var secondaryZone = TryResolveTimeZone(settings.SecondaryTimeZoneId);
         var scheduleWidth = ResolveScheduleWidth(settings.ScheduleCanvasWidth, availableScheduleWidth);
 
@@ -270,4 +271,5 @@ public static class DayScheduleDisplayBuilder
     }
 
     private static readonly CultureInfo _culture = CultureInfo.GetCultureInfo("en-US");
+    private const int TIMELINE_BOTTOM_PADDING = 18;
 }
