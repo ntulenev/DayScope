@@ -1,8 +1,8 @@
 # DayScope
 
-DayScope is a lightweight Windows desktop dashboard for a focused day view of your Google schedule.
+DayScope is a lightweight Windows desktop dashboard for a focused day view of your schedule.
 
-It pulls events from Google Calendar, lays them out on a clean day timeline, highlights all-day events, shows attendance state, and can display a secondary time zone alongside the main schedule. It also shows unread Gmail inbox count for the authenticated Google account, provides quick links into Gmail and Google Calendar, and supports selectable app themes.
+With Google integration enabled, it pulls events from Google Calendar, lays them out on a clean day timeline, highlights all-day events, shows attendance state, and can display a secondary time zone alongside the main schedule. It also shows unread Gmail inbox count for the authenticated Google account, provides quick links into Gmail and Google Calendar, and supports selectable built-in themes. A demo mode is also available when you want to run the UI without Google APIs.
 
 The app is designed to stay out of the way: it starts as a small desktop companion and can be hidden to the system tray, where you can reopen it, trigger a manual refresh, or exit.
 
@@ -14,14 +14,18 @@ The app is designed to stay out of the way: it starts as a small desktop compani
 - All-day event strip
 - Event status styling for confirmed, tentative, declined, cancelled, and awaiting response
 - Day navigation with previous / next controls
-- Theme switching from the tray menu with OS, Light, Dark, Forest, and Dark Pink options
+- Theme switching from the tray menu with OS, Light, Dark, Forest, Autumn, Dark Pink, and Matrix options
 - Click the day header to open Google Calendar for the selected day
 - Click the unread email badge to open Gmail for the authenticated account
 - Event details modal with description, participants, and meeting links
+- Event detail actions to open or copy meeting links
+- Limited HTML rendering in event descriptions with clickable links
 - Secondary time zone column
+- Smooth animated vertical scrolling in the schedule and event-details panel
 - Configurable schedule hours, window size, and refresh interval
 - System tray integration with manual refresh
 - Account-aware Google links when multiple Google accounts are signed in
+- Demo mode with synthetic calendar and inbox data
 
 ## Tech Stack
 
@@ -42,6 +46,9 @@ The app is designed to stay out of the way: it starts as a small desktop compani
 
 - Windows
 - .NET 10 SDK
+
+For live Google integration:
+
 - A Google Cloud OAuth client for desktop usage
 - Google Calendar API enabled
 - Gmail API enabled
@@ -58,7 +65,10 @@ Important settings:
 - `DaySchedule.HourHeight` - vertical scale of the timeline
 - `DaySchedule.ScheduleCanvasWidth` - preferred width of the schedule surface
 - `DaySchedule.SecondaryTimeZoneId` - optional second time zone
-- `GoogleCalendar.Enabled` - turn calendar sync on or off
+- `DaySchedule.SecondaryTimeZoneLabel` - optional label override for the secondary time zone
+- `DemoMode.Enabled` - use synthetic demo data instead of Google APIs
+- `DemoMode.UnreadEmailCount` - simulated unread inbox count in demo mode
+- `GoogleCalendar.Enabled` - turn Google-backed calendar and inbox sync on or off
 - `GoogleCalendar.CalendarId` - usually `primary`
 - `GoogleCalendar.RefreshMinutes` - automatic refresh interval
 - `GoogleCalendar.ClientSecretsPath` - path to your Google OAuth client JSON
@@ -71,6 +81,8 @@ Default local paths use `%LocalAppData%\DayScope`.
 Theme preference is stored at:
 
 - `%LocalAppData%\DayScope\preferences.json`
+
+When `DemoMode.Enabled` is `true`, the app uses synthetic calendar and inbox data and does not require Google setup.
 
 ## Google Setup
 
@@ -126,7 +138,7 @@ Dark Pink theme main window
 - Closing the window hides it to the system tray instead of exiting.
 - Double-click the tray icon or use `Open` to show the window again.
 - Use `Refresh now` in the tray menu to trigger a manual refresh.
-- Use `Theme` in the tray menu to switch between OS, Light, Dark, Forest, and Dark Pink.
+- Use `Theme` in the tray menu to switch between OS, Light, Dark, Forest, Autumn, Dark Pink, and Matrix.
 - Use `Exit` in the tray menu to fully close the application.
 
 ## Purpose
