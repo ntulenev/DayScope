@@ -8,6 +8,7 @@ using DayScope.Application.DependencyInjection;
 using DayScope.DependencyInjection;
 using DayScope.Domain.Configuration;
 using DayScope.Infrastructure.Configuration;
+using DayScope.Platform;
 using DayScope.Shell;
 using DayScope.Themes;
 using DayScope.Views;
@@ -33,6 +34,7 @@ public partial class App : System.Windows.Application
         _host = CreateHost();
         await _host.StartAsync();
 
+        HtmlTextBlockLinkNavigator.Configure(_host.Services.GetRequiredService<IUriLauncher>());
         _themeManager = _host.Services.GetRequiredService<ThemeManager>();
         _themeManager.Initialize();
         _mainWindow = _host.Services.GetRequiredService<MainWindow>();
