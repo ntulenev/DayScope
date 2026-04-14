@@ -1,9 +1,11 @@
 using System.Windows;
 using System.Windows.Input;
 using System.ComponentModel;
+using System.Text;
 
 using Microsoft.Extensions.Options;
 
+using DayScope.Application.DaySchedule;
 using DayScope.Domain.Configuration;
 using DayScope.Platform;
 using DayScope.Themes;
@@ -208,6 +210,24 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Copies the selected event title, time, and description to the clipboard.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnCopyEventDetailsClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.EventDetails.SelectedEventDetails is not { } eventDetails)
+        {
+            return;
+        }
+
+        _ = _clipboardService.TrySetText(
+            BuildEventDetailsClipboardText(
+                eventDetails,
+                _viewModel.Schedule.PrimaryTimeZoneLabel));
+    }
+
+    /// <summary>
     /// Recalculates the available width for the schedule surface.
     /// </summary>
     private void UpdateScheduleWidth()
@@ -265,6 +285,29 @@ public partial class MainWindow : Window
     {
         _themeController.Detach(this);
         _viewModel.Dispose();
+    }
+
+    private static string BuildEventDetailsClipboardText(
+        EventDetailsDisplayState eventDetails,
+        string? timeZoneLabel)
+    {
+        var builder = new StringBuilder();
+        builder.Append("Title: ").AppendLine(eventDetails.Title);
+        builder.AppendLine();
+        builder.Append("Time: ").AppendLine(FormatClipboardScheduleText(eventDetails.ScheduleText, timeZoneLabel));
+
+        var description = HtmlTextBlockRenderer.ToPlainText(eventDetails.Description);
+        builder.AppendLine();
+        builder.AppendLine("Description:");
+        builder.AppendLine(string.IsNullOrWhiteSpace(description) ? "No description" : description);
+        return builder.ToString().TrimEnd();
+    }
+
+    private static string FormatClipboardScheduleText(string scheduleText, string? timeZoneLabel)
+    {
+        return string.IsNullOrWhiteSpace(timeZoneLabel)
+            ? scheduleText
+            : string.Concat(scheduleText, " (", timeZoneLabel.Trim(), ")");
     }
 
     private readonly MainWindowViewModel _viewModel;

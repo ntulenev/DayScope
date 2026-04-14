@@ -797,23 +797,46 @@
                             </Border>
                         </StackPanel>
 
-                        <Button Grid.Column="1"
-                                Width="30"
-                                Height="30"
-                                FocusVisualStyle="{x:Null}"
-                                Background="{DynamicResource CloseButtonBackgroundBrush}"
-                                BorderBrush="{DynamicResource CloseButtonBorderBrush}"
-                                BorderThickness="1"
-                                Click="OnCloseEventDetailsClick"
-                                Cursor="Hand">
-                            <TextBlock FontFamily="{StaticResource UiFont}"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource CloseButtonTextBrush}"
-                                       Text="X"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                        </Button>
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button Width="58"
+                                    Height="30"
+                                    Margin="0,0,8,0"
+                                    Padding="10,0"
+                                    FocusVisualStyle="{x:Null}"
+                                    Background="{DynamicResource CloseButtonBackgroundBrush}"
+                                    BorderBrush="{DynamicResource CloseButtonBorderBrush}"
+                                    BorderThickness="1"
+                                    Click="OnCopyEventDetailsClick"
+                                    Cursor="Hand"
+                                    ToolTip="Copy title, time and description">
+                                <TextBlock FontFamily="{StaticResource UiFont}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource CloseButtonTextBrush}"
+                                           Text="Copy"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Button>
+
+                            <Button Width="30"
+                                    Height="30"
+                                    FocusVisualStyle="{x:Null}"
+                                    Background="{DynamicResource CloseButtonBackgroundBrush}"
+                                    BorderBrush="{DynamicResource CloseButtonBorderBrush}"
+                                    BorderThickness="1"
+                                    Click="OnCloseEventDetailsClick"
+                                    Cursor="Hand">
+                                <TextBlock FontFamily="{StaticResource UiFont}"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource CloseButtonTextBrush}"
+                                           Text="X"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Button>
+                        </StackPanel>
                     </Grid>
 
                     <ScrollViewer Grid.Row="1"

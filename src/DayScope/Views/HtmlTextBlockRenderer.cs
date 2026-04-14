@@ -13,6 +13,67 @@ namespace DayScope.Views;
 public static partial class HtmlTextBlockRenderer
 {
     /// <summary>
+    /// Converts a constrained HTML fragment into plain text while preserving line breaks.
+    /// </summary>
+    /// <param name="html">The HTML fragment to convert.</param>
+    /// <returns>The plain-text representation of the fragment.</returns>
+    public static string ToPlainText(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return string.Empty;
+        }
+
+        var segments = new List<string>();
+        var currentLine = new System.Text.StringBuilder();
+        var pendingBreaks = 0;
+
+        foreach (Match tokenMatch in HtmlTokenRegex().Matches(html))
+        {
+            if (tokenMatch.Groups["anchor"].Success)
+            {
+                FlushPendingPlainTextBreaks(segments, currentLine, ref pendingBreaks);
+                AppendPlainText(currentLine, tokenMatch.Groups["anchorText"].Value, fallbackText: tokenMatch.Groups["href"].Value);
+                continue;
+            }
+
+            if (tokenMatch.Groups["break"].Success)
+            {
+                pendingBreaks = Math.Max(pendingBreaks, 1);
+                continue;
+            }
+
+            if (tokenMatch.Groups["block"].Success)
+            {
+                pendingBreaks = Math.Max(pendingBreaks, 2);
+                continue;
+            }
+
+            if (tokenMatch.Groups["li"].Success)
+            {
+                FlushPendingPlainTextBreaks(segments, currentLine, ref pendingBreaks);
+                if (currentLine.Length == 0)
+                {
+                    currentLine.Append("- ");
+                }
+
+                continue;
+            }
+
+            if (!tokenMatch.Groups["text"].Success)
+            {
+                continue;
+            }
+
+            FlushPendingPlainTextBreaks(segments, currentLine, ref pendingBreaks);
+            AppendPlainText(currentLine, tokenMatch.Groups["text"].Value);
+        }
+
+        FlushCurrentPlainTextLine(segments, currentLine);
+        return string.Join(Environment.NewLine, TrimTrailingBlankLines(segments)).Trim();
+    }
+
+    /// <summary>
     /// Renders the provided HTML fragment into the target text block.
     /// </summary>
     /// <param name="textBlock">The text block that receives the rendered inlines.</param>
@@ -191,6 +252,70 @@ public static partial class HtmlTextBlockRenderer
             .Replace('\u00A0', ' ');
 
     private static string StripTags(string text) => GenericTagRegex().Replace(text, string.Empty);
+
+    private static void FlushPendingPlainTextBreaks(
+        List<string> segments,
+        System.Text.StringBuilder currentLine,
+        ref int pendingBreaks)
+    {
+        if (pendingBreaks <= 0)
+        {
+            return;
+        }
+
+        FlushCurrentPlainTextLine(segments, currentLine);
+        for (var index = 1; index < pendingBreaks; index++)
+        {
+            segments.Add(string.Empty);
+        }
+
+        pendingBreaks = 0;
+    }
+
+    private static void FlushCurrentPlainTextLine(
+        List<string> segments,
+        System.Text.StringBuilder currentLine)
+    {
+        if (currentLine.Length == 0)
+        {
+            return;
+        }
+
+        segments.Add(currentLine.ToString().Trim());
+        currentLine.Clear();
+    }
+
+    private static void AppendPlainText(
+        System.Text.StringBuilder currentLine,
+        string htmlFragment,
+        string? fallbackText = null)
+    {
+        var plainText = DecodeText(StripTags(htmlFragment));
+        if (string.IsNullOrWhiteSpace(plainText))
+        {
+            plainText = fallbackText is null ? string.Empty : DecodeText(fallbackText);
+        }
+
+        if (string.IsNullOrWhiteSpace(plainText))
+        {
+            return;
+        }
+
+        currentLine.Append(plainText);
+    }
+
+    private static string[] TrimTrailingBlankLines(List<string> segments)
+    {
+        var lastVisibleIndex = segments.Count - 1;
+        while (lastVisibleIndex >= 0 && string.IsNullOrWhiteSpace(segments[lastVisibleIndex]))
+        {
+            lastVisibleIndex--;
+        }
+
+        return lastVisibleIndex < 0
+            ? []
+            : [.. segments.Take(lastVisibleIndex + 1)];
+    }
 
     private static bool TryCreateUri(string value, out Uri uri) =>
         Uri.TryCreate(WebUtility.HtmlDecode(value), UriKind.Absolute, out uri!);
