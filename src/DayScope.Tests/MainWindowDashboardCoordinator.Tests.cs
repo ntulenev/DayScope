@@ -82,6 +82,51 @@ public sealed class MainWindowDashboardCoordinatorTests
         createTimerCalls.Should().Be(2);
     }
 
+    [Fact(DisplayName = "Initialization runs only once when called repeatedly.")]
+    [Trait("Category", "Unit")]
+    public async Task InitializeAsyncShouldBeIdempotent()
+    {
+        // Arrange
+        var displayState = CreateDisplayState();
+        var inboxSnapshot = CreateInboxSnapshot(unreadCount: 2);
+        var clockTimer = new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1));
+        var calendarTimer = new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5));
+        var timerFactory = CreateTimerFactory(clockTimer, calendarTimer);
+        var refreshCalls = 0;
+        var inboxCalls = 0;
+        var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
+        dashboardService.SetupGet(service => service.CalendarRefreshInterval)
+            .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.IsCalendarEnabled)
+            .Returns(true);
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Interactive,
+                860,
+                It.IsAny<CancellationToken>()))
+            .Callback(() => refreshCalls++)
+            .ReturnsAsync(displayState);
+        var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .Callback(() => inboxCalls++)
+            .ReturnsAsync(inboxSnapshot);
+        using var coordinator = new MainWindowDashboardCoordinator(
+            dashboardService.Object,
+            emailInboxService.Object,
+            timerFactory);
+
+        // Act
+        await coordinator.InitializeAsync();
+        await coordinator.InitializeAsync();
+
+        // Assert
+        refreshCalls.Should().Be(1);
+        inboxCalls.Should().Be(1);
+        clockTimer.StartCalls.Should().Be(1);
+        calendarTimer.StopCalls.Should().Be(1);
+        calendarTimer.StartCalls.Should().Be(1);
+        timerFactory.CreateCalls.Should().Be(2);
+    }
+
     [Fact(DisplayName = "Day navigation publishes the current loading state before the refreshed state.")]
     [Trait("Category", "Unit")]
     public async Task NavigateDaysAsyncShouldPublishLoadingStateBeforeRefreshedState()
@@ -149,6 +194,63 @@ public sealed class MainWindowDashboardCoordinatorTests
         timerFactory.CreateCalls.Should().Be(2);
     }
 
+    [Fact(DisplayName = "Concurrent refresh requests reuse the in-flight refresh and publish the current state once.")]
+    [Trait("Category", "Unit")]
+    public async Task RefreshNowAsyncShouldNotStartAnotherRefreshWhenOneIsAlreadyRunning()
+    {
+        // Arrange
+        var loadingState = CreateDisplayState(statusText: "Refreshing...", showStatus: true);
+        var refreshedState = CreateDisplayState(displayDate: new DateOnly(2026, 4, 16));
+        var publishedStates = new List<DayScheduleDisplayState>();
+        var refreshCompletion = new TaskCompletionSource<DayScheduleDisplayState>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var refreshCalls = 0;
+        var getCurrentDisplayStateCalls = 0;
+        var inboxCalls = 0;
+        var timerFactory = CreateTimerFactory(
+            new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1)),
+            new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5)));
+        var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
+        dashboardService.SetupGet(service => service.CalendarRefreshInterval)
+            .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.IsCalendarEnabled)
+            .Returns(false);
+        dashboardService.Setup(service => service.GetCurrentDisplayState(860))
+            .Callback(() => getCurrentDisplayStateCalls++)
+            .Returns(loadingState);
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Interactive,
+                860,
+                It.IsAny<CancellationToken>()))
+            .Callback(() => refreshCalls++)
+            .Returns(refreshCompletion.Task);
+        var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
+        emailInboxService.SetupGet(service => service.IsEnabled)
+            .Returns(false);
+        emailInboxService.Setup(service => service.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .Callback(() => inboxCalls++)
+            .ReturnsAsync(CreateInboxSnapshot(unreadCount: 4));
+        using var coordinator = new MainWindowDashboardCoordinator(
+            dashboardService.Object,
+            emailInboxService.Object,
+            timerFactory);
+        coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
+
+        // Act
+        var firstRefresh = coordinator.RefreshNowAsync();
+        await Task.Yield();
+        await coordinator.RefreshNowAsync();
+        refreshCompletion.SetResult(refreshedState);
+        await firstRefresh;
+
+        // Assert
+        refreshCalls.Should().Be(1);
+        getCurrentDisplayStateCalls.Should().Be(1);
+        inboxCalls.Should().Be(1);
+        publishedStates.Should().ContainInOrder(loadingState, refreshedState);
+        timerFactory.CreateCalls.Should().Be(2);
+    }
+
     [Fact(DisplayName = "Schedule-width updates normalize the measured width and publish only when the width changes.")]
     [Trait("Category", "Unit")]
     public void UpdateAvailableScheduleWidthShouldNormalizeWidthAndPublishOnlyWhenTheWidthChanges()
@@ -176,6 +278,40 @@ public sealed class MainWindowDashboardCoordinatorTests
         // Act
         coordinator.UpdateAvailableScheduleWidth(500.9);
         coordinator.UpdateAvailableScheduleWidth(500.2);
+
+        // Assert
+        publishedStates.Should().ContainSingle()
+            .Which.Should().BeSameAs(displayState);
+        getCurrentDisplayStateCalls.Should().Be(1);
+        timerFactory.CreateCalls.Should().Be(2);
+    }
+
+    [Fact(DisplayName = "Schedule-width updates clamp values below the minimum supported width.")]
+    [Trait("Category", "Unit")]
+    public void UpdateAvailableScheduleWidthShouldClampToTheMinimumWidth()
+    {
+        // Arrange
+        var displayState = CreateDisplayState(width: 420);
+        var publishedStates = new List<DayScheduleDisplayState>();
+        var getCurrentDisplayStateCalls = 0;
+        var timerFactory = CreateTimerFactory(
+            new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1)),
+            new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5)));
+        var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
+        dashboardService.SetupGet(service => service.CalendarRefreshInterval)
+            .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.Setup(service => service.GetCurrentDisplayState(420))
+            .Callback(() => getCurrentDisplayStateCalls++)
+            .Returns(displayState);
+        var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
+        using var coordinator = new MainWindowDashboardCoordinator(
+            dashboardService.Object,
+            emailInboxService.Object,
+            timerFactory);
+        coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
+
+        // Act
+        coordinator.UpdateAvailableScheduleWidth(100);
 
         // Assert
         publishedStates.Should().ContainSingle()

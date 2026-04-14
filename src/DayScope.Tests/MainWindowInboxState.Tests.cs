@@ -96,6 +96,64 @@ public sealed class MainWindowInboxStateTests
         workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(2);
     }
 
+    [Fact(DisplayName = "Applying the current display date does not rebuild the Google Calendar link.")]
+    [Trait("Category", "Unit")]
+    public void ApplyDisplayDateShouldNotRebuildGoogleCalendarUriWhenTheDateIsUnchanged()
+    {
+        // Arrange
+        var initialDisplayDate = DateOnly.FromDateTime(DateTime.Today);
+        var initialUri = new Uri("https://calendar.google.com/calendar/r/day/2026/4/14");
+        var workspaceUriBuilder = new RecordingGoogleWorkspaceUriBuilder
+        {
+            BuildCalendarDayUriHandler = (requestedDate, emailAddress) =>
+            {
+                requestedDate.Should().Be(initialDisplayDate);
+                emailAddress.Should().BeNull();
+                return initialUri;
+            }
+        };
+        var state = new MainWindowInboxState(workspaceUriBuilder);
+
+        // Act
+        state.ApplyDisplayDate(initialDisplayDate);
+
+        // Assert
+        state.GoogleCalendarUri.Should().Be(initialUri);
+        workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Applying the same email address with different casing does not rebuild the calendar link again.")]
+    [Trait("Category", "Unit")]
+    public void ApplySnapshotShouldNotRebuildCalendarLinkWhenTheNormalizedEmailDoesNotChange()
+    {
+        // Arrange
+        var displayDate = DateOnly.FromDateTime(DateTime.Today);
+        var initialUri = new Uri("https://calendar.google.com/calendar/r/day/2026/4/14");
+        var accountAwareCalendarUri = new Uri(
+            "https://calendar.google.com/calendar/r/day/2026/4/14?authuser=user%40example.com");
+        var inboxUri = new Uri("https://mail.google.com/mail/u/?authuser=user%40example.com#inbox");
+        var workspaceUriBuilder = new RecordingGoogleWorkspaceUriBuilder
+        {
+            BuildCalendarDayUriHandler = (requestedDate, emailAddress) =>
+            {
+                requestedDate.Should().Be(displayDate);
+                return emailAddress is null
+                    ? initialUri
+                    : accountAwareCalendarUri;
+            }
+        };
+        var state = new MainWindowInboxState(workspaceUriBuilder);
+
+        // Act
+        state.ApplySnapshot(new EmailInboxSnapshot(5, " user@example.com ", inboxUri));
+        state.ApplySnapshot(new EmailInboxSnapshot(7, "USER@example.com", inboxUri));
+
+        // Assert
+        state.UnreadEmailCount.Should().Be(7);
+        state.GoogleCalendarUri.Should().Be(accountAwareCalendarUri);
+        workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(2);
+    }
+
     private sealed class RecordingGoogleWorkspaceUriBuilder : IGoogleWorkspaceUriBuilder
     {
         public int BuildCalendarDayUriCalls { get; private set; }
