@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="DayScope.Application.Tests/DayScope.Application.Tests.csproj" />
   <Project Path="DayScope.Application/DayScope.Application.csproj" />
   <Project Path="DayScope.Domain/DayScope.Domain.csproj" />
   <Project Path="DayScope.Infrastructure/DayScope.Infrastructure.csproj" />
