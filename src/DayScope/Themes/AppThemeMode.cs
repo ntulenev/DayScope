@@ -38,5 +38,10 @@ public enum AppThemeMode
     /// <summary>
     /// Uses a Matrix-inspired neon green dark palette.
     /// </summary>
-    Matrix = 6
+    Matrix = 6,
+
+    /// <summary>
+    /// Uses a Visual Studio-inspired coding palette.
+    /// </summary>
+    Code = 7
 }

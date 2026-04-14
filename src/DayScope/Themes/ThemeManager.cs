@@ -150,6 +150,7 @@ public sealed class ThemeManager : IDisposable
             AppThemeMode.Autumn => AppThemeMode.Autumn,
             AppThemeMode.DarkPink => AppThemeMode.DarkPink,
             AppThemeMode.Matrix => AppThemeMode.Matrix,
+            AppThemeMode.Code => AppThemeMode.Code,
             _ => _osThemeDetector.DetectThemeMode()
         };
     }

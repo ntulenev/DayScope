@@ -37,6 +37,7 @@ public sealed class ApplicationThemeResourceApplier : IThemeResourceApplier
             AppThemeMode.Autumn => _autumnThemeUri,
             AppThemeMode.DarkPink => _darkPinkThemeUri,
             AppThemeMode.Matrix => _matrixThemeUri,
+            AppThemeMode.Code => _codeThemeUri,
             AppThemeMode.Dark => _darkThemeUri,
             _ => _darkThemeUri
         };
@@ -48,5 +49,6 @@ public sealed class ApplicationThemeResourceApplier : IThemeResourceApplier
     private readonly Uri _autumnThemeUri = new("Themes/AutumnTheme.xaml", UriKind.Relative);
     private readonly Uri _darkPinkThemeUri = new("Themes/DarkPinkTheme.xaml", UriKind.Relative);
     private readonly Uri _matrixThemeUri = new("Themes/MatrixTheme.xaml", UriKind.Relative);
+    private readonly Uri _codeThemeUri = new("Themes/CodeTheme.xaml", UriKind.Relative);
     private System.Windows.ResourceDictionary? _themeDictionary;
 }
