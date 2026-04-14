@@ -154,6 +154,43 @@ public sealed class MainWindowInboxStateTests
         workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(2);
     }
 
+    [Fact(DisplayName = "Applying a snapshot with a blank email restores the generic calendar link and inbox summary.")]
+    [Trait("Category", "Unit")]
+    public void ApplySnapshotShouldRestoreGenericCalendarLinkWhenTheEmailIsCleared()
+    {
+        // Arrange
+        var displayDate = DateOnly.FromDateTime(DateTime.Today);
+        var initialUri = new Uri("https://calendar.google.com/calendar/r/day/2026/4/14");
+        var accountAwareCalendarUri = new Uri(
+            "https://calendar.google.com/calendar/r/day/2026/4/14?authuser=user%40example.com");
+        var emptyInboxUri = new Uri("https://mail.google.com/mail/");
+        var workspaceUriBuilder = new RecordingGoogleWorkspaceUriBuilder
+        {
+            BuildCalendarDayUriHandler = (requestedDate, emailAddress) =>
+            {
+                requestedDate.Should().Be(displayDate);
+                return emailAddress is null
+                    ? initialUri
+                    : accountAwareCalendarUri;
+            }
+        };
+        var state = new MainWindowInboxState(workspaceUriBuilder);
+
+        state.ApplySnapshot(new EmailInboxSnapshot(3, "user@example.com", emptyInboxUri));
+
+        // Act
+        state.ApplySnapshot(new EmailInboxSnapshot(0, " ", emptyInboxUri));
+
+        // Assert
+        state.UnreadEmailCount.Should().Be(0);
+        state.UnreadEmailCountText.Should().Be("0");
+        state.HasUnreadEmails.Should().BeFalse();
+        state.UnreadEmailSummaryText.Should().Be("Inbox is clear");
+        state.UnreadEmailInboxUri.Should().Be(emptyInboxUri);
+        state.GoogleCalendarUri.Should().Be(initialUri);
+        workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(3);
+    }
+
     private sealed class RecordingGoogleWorkspaceUriBuilder : IGoogleWorkspaceUriBuilder
     {
         public int BuildCalendarDayUriCalls { get; private set; }
