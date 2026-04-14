@@ -94,6 +94,8 @@ public sealed class DayScheduleDashboardServiceTests
     {
         // Arrange
         var now = new DateTimeOffset(2026, 4, 14, 9, 0, 0, TimeSpan.Zero);
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var refreshCompletionSource = new TaskCompletionSource<CalendarLoadResult>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var getEventsCalls = 0;
@@ -105,7 +107,7 @@ public sealed class DayScheduleDashboardServiceTests
                 new DateOnly(2026, 4, 14),
                 TimeZoneInfo.Utc,
                 CalendarInteractionMode.Interactive,
-                CancellationToken.None))
+                token))
             .Callback(() => getEventsCalls++)
             .Returns(refreshCompletionSource.Task);
         var localTimeZoneProvider = new Mock<ILocalTimeZoneProvider>(MockBehavior.Strict);
@@ -118,13 +120,13 @@ public sealed class DayScheduleDashboardServiceTests
         var firstRefresh = service.RefreshCalendarAsync(
             CalendarInteractionMode.Interactive,
             600,
-            CancellationToken.None);
+            token);
 
         // Act
         var state = await service.RefreshCalendarAsync(
             CalendarInteractionMode.Interactive,
             620,
-            CancellationToken.None);
+            token);
 
         // Assert
         state.DisplayDate.Should().Be(new DateOnly(2026, 4, 14));

@@ -147,6 +147,7 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldThrowWhenTimeZoneIsNull()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
         var service = CreateService();
 
         // Act
@@ -154,7 +155,7 @@ public sealed class GoogleCalendarServiceTests
             new DateOnly(2026, 4, 14),
             null!,
             CalendarInteractionMode.Interactive,
-            CancellationToken.None);
+            cancellationTokenSource.Token);
 
         // Assert
         await action.Should().ThrowAsync<ArgumentNullException>();
@@ -165,6 +166,7 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldReturnDisabledWhenServiceIsDisabled()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
         var credentialProvider = new Mock<IGoogleCredentialProvider>(MockBehavior.Strict);
         credentialProvider.SetupGet(provider => provider.IsEnabled)
             .Returns(false);
@@ -175,7 +177,7 @@ public sealed class GoogleCalendarServiceTests
             new DateOnly(2026, 4, 14),
             TimeZoneInfo.Utc,
             CalendarInteractionMode.Interactive,
-            CancellationToken.None);
+            cancellationTokenSource.Token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.Disabled);
@@ -187,13 +189,15 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldReturnDisabledWhenCredentialProviderReturnsDisabled()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var credentialRequests = 0;
         var credentialProvider = new Mock<IGoogleCredentialProvider>(MockBehavior.Strict);
         credentialProvider.SetupGet(provider => provider.IsEnabled)
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 true,
-                CancellationToken.None))
+                token))
             .Callback(() => credentialRequests++)
             .ReturnsAsync(GoogleCredentialLoadResult.Disabled());
         var service = CreateService(credentialProvider: credentialProvider.Object);
@@ -203,7 +207,7 @@ public sealed class GoogleCalendarServiceTests
             new DateOnly(2026, 4, 14),
             TimeZoneInfo.Utc,
             CalendarInteractionMode.Interactive,
-            CancellationToken.None);
+            token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.Disabled);
@@ -215,12 +219,14 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldReturnClientSecretsMissingWhenCredentialProviderReturnsClientSecretsMissing()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var credentialProvider = new Mock<IGoogleCredentialProvider>(MockBehavior.Strict);
         credentialProvider.SetupGet(provider => provider.IsEnabled)
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 false,
-                CancellationToken.None))
+                token))
             .ReturnsAsync(GoogleCredentialLoadResult.ClientSecretsMissing());
         var service = CreateService(credentialProvider: credentialProvider.Object);
 
@@ -229,7 +235,7 @@ public sealed class GoogleCalendarServiceTests
             new DateOnly(2026, 4, 14),
             TimeZoneInfo.Utc,
             CalendarInteractionMode.Background,
-            CancellationToken.None);
+            token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.ClientSecretsMissing);
@@ -240,12 +246,14 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldReturnAuthorizationRequiredWhenCredentialIsMissing()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var credentialProvider = new Mock<IGoogleCredentialProvider>(MockBehavior.Strict);
         credentialProvider.SetupGet(provider => provider.IsEnabled)
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 true,
-                CancellationToken.None))
+                token))
             .ReturnsAsync(GoogleCredentialLoadResult.AuthorizationRequired());
         var service = CreateService(credentialProvider: credentialProvider.Object);
 
@@ -254,7 +262,7 @@ public sealed class GoogleCalendarServiceTests
             new DateOnly(2026, 4, 14),
             TimeZoneInfo.Utc,
             CalendarInteractionMode.Interactive,
-            CancellationToken.None);
+            token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.AuthorizationRequired);
@@ -265,6 +273,8 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldReturnNoEventsWhenMappedAgendaIsEmpty()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var day = new DateOnly(2026, 4, 14);
         var timeZone = TimeZoneInfo.Utc;
         var credential = CreateCredential();
@@ -275,7 +285,7 @@ public sealed class GoogleCalendarServiceTests
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 true,
-                CancellationToken.None))
+                token))
             .ReturnsAsync(GoogleCredentialLoadResult.Success(credential));
         var calendarGateway = new Mock<IGoogleCalendarGateway>(MockBehavior.Strict);
         calendarGateway.Setup(gateway => gateway.GetEventsAsync(
@@ -283,7 +293,7 @@ public sealed class GoogleCalendarServiceTests
                 "primary",
                 new DateTimeOffset(2026, 4, 14, 0, 0, 0, TimeSpan.Zero),
                 new DateTimeOffset(2026, 4, 15, 0, 0, 0, TimeSpan.Zero),
-                CancellationToken.None))
+                token))
             .ReturnsAsync([sourceEvent]);
         var calendarEventMapper = new Mock<IGoogleCalendarEventMapper>(MockBehavior.Strict);
         calendarEventMapper.Setup(mapper => mapper.MapEvent(sourceEvent, timeZone))
@@ -299,7 +309,7 @@ public sealed class GoogleCalendarServiceTests
             day,
             timeZone,
             CalendarInteractionMode.Interactive,
-            CancellationToken.None);
+            token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.NoEvents);
@@ -312,6 +322,8 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldReturnIntersectingMappedEventsInChronologicalOrder()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var day = new DateOnly(2026, 4, 14);
         var timeZone = TimeZoneInfo.Utc;
         var credential = CreateCredential();
@@ -330,7 +342,7 @@ public sealed class GoogleCalendarServiceTests
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 false,
-                CancellationToken.None))
+                token))
             .ReturnsAsync(GoogleCredentialLoadResult.Success(credential));
         var calendarGateway = new Mock<IGoogleCalendarGateway>(MockBehavior.Strict);
         calendarGateway.Setup(gateway => gateway.GetEventsAsync(
@@ -338,7 +350,7 @@ public sealed class GoogleCalendarServiceTests
                 "work",
                 new DateTimeOffset(2026, 4, 14, 0, 0, 0, TimeSpan.Zero),
                 new DateTimeOffset(2026, 4, 15, 0, 0, 0, TimeSpan.Zero),
-                CancellationToken.None))
+                token))
             .ReturnsAsync([firstSourceEvent, secondSourceEvent]);
         var calendarEventMapper = new Mock<IGoogleCalendarEventMapper>(MockBehavior.Strict);
         calendarEventMapper.Setup(mapper => mapper.MapEvent(firstSourceEvent, timeZone))
@@ -356,7 +368,7 @@ public sealed class GoogleCalendarServiceTests
             day,
             timeZone,
             CalendarInteractionMode.Background,
-            CancellationToken.None);
+            token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.Success);
@@ -368,6 +380,8 @@ public sealed class GoogleCalendarServiceTests
     public async Task GetEventsForDateAsyncShouldMapInfrastructureFailuresThroughFailureMapper()
     {
         // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var credential = CreateCredential();
         var day = new DateOnly(2026, 4, 14);
         var failure = new InvalidOperationException("Boom");
@@ -377,7 +391,7 @@ public sealed class GoogleCalendarServiceTests
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 true,
-                CancellationToken.None))
+                token))
             .ReturnsAsync(GoogleCredentialLoadResult.Success(credential));
         var calendarGateway = new Mock<IGoogleCalendarGateway>(MockBehavior.Strict);
         calendarGateway.Setup(gateway => gateway.GetEventsAsync(
@@ -385,7 +399,7 @@ public sealed class GoogleCalendarServiceTests
                 "primary",
                 new DateTimeOffset(2026, 4, 14, 0, 0, 0, TimeSpan.Zero),
                 new DateTimeOffset(2026, 4, 15, 0, 0, 0, TimeSpan.Zero),
-                CancellationToken.None))
+                token))
             .ThrowsAsync(failure);
         var calendarFailureMapper = new Mock<IGoogleCalendarFailureMapper>(MockBehavior.Strict);
         calendarFailureMapper.Setup(mapper => mapper.Map(failure))
@@ -401,7 +415,7 @@ public sealed class GoogleCalendarServiceTests
             day,
             TimeZoneInfo.Utc,
             CalendarInteractionMode.Interactive,
-            CancellationToken.None);
+            token);
 
         // Assert
         result.Status.Should().Be(CalendarLoadStatus.Unavailable);
@@ -430,11 +444,11 @@ public sealed class GoogleCalendarServiceTests
             .Returns(true);
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 true,
-                CancellationToken.None))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(GoogleCredentialLoadResult.AuthorizationRequired());
         credentialProvider.Setup(provider => provider.GetCredentialAsync(
                 false,
-                CancellationToken.None))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(GoogleCredentialLoadResult.AuthorizationRequired());
 
         return credentialProvider.Object;

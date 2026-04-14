@@ -25,6 +25,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         var createTimerCalls = 0;
         var refreshCalls = 0;
         var inboxCalls = 0;
+        CancellationToken capturedRefreshToken = default;
+        CancellationToken capturedInboxToken = default;
         var timerFactory = new Mock<IUiDispatcherTimerFactory>(MockBehavior.Strict);
         timerFactory.Setup(factory => factory.Create(TimeSpan.FromMinutes(1)))
             .Callback(() => createTimerCalls++)
@@ -40,12 +42,20 @@ public sealed class MainWindowDashboardCoordinatorTests
         dashboardService.Setup(service => service.RefreshCalendarAsync(
                 CalendarInteractionMode.Interactive,
                 860,
-                CancellationToken.None))
-            .Callback(() => refreshCalls++)
+                It.IsAny<CancellationToken>()))
+            .Callback<CalendarInteractionMode, double?, CancellationToken>((_, _, token) =>
+            {
+                refreshCalls++;
+                capturedRefreshToken = token;
+            })
             .ReturnsAsync(displayState);
         var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
-        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, CancellationToken.None))
-            .Callback(() => inboxCalls++)
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .Callback<bool, CancellationToken>((_, token) =>
+            {
+                inboxCalls++;
+                capturedInboxToken = token;
+            })
             .ReturnsAsync(inboxSnapshot);
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
@@ -67,6 +77,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         calendarTimer.StartCalls.Should().Be(1);
         refreshCalls.Should().Be(1);
         inboxCalls.Should().Be(1);
+        capturedRefreshToken.CanBeCanceled.Should().BeFalse();
+        capturedInboxToken.CanBeCanceled.Should().BeFalse();
         createTimerCalls.Should().Be(2);
     }
 
@@ -82,6 +94,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         var getCurrentDisplayStateCalls = 0;
         var refreshCalls = 0;
         var inboxCalls = 0;
+        CancellationToken capturedRefreshToken = default;
+        CancellationToken capturedInboxToken = default;
         var timerFactory = CreateTimerFactory(
             new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1)),
             new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5)));
@@ -98,14 +112,22 @@ public sealed class MainWindowDashboardCoordinatorTests
         dashboardService.Setup(service => service.RefreshCalendarAsync(
                 CalendarInteractionMode.Interactive,
                 860,
-                CancellationToken.None))
-            .Callback(() => refreshCalls++)
+                It.IsAny<CancellationToken>()))
+            .Callback<CalendarInteractionMode, double?, CancellationToken>((_, _, token) =>
+            {
+                refreshCalls++;
+                capturedRefreshToken = token;
+            })
             .ReturnsAsync(refreshedState);
         var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
         emailInboxService.SetupGet(email => email.IsEnabled)
             .Returns(false);
-        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, CancellationToken.None))
-            .Callback(() => inboxCalls++)
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .Callback<bool, CancellationToken>((_, token) =>
+            {
+                inboxCalls++;
+                capturedInboxToken = token;
+            })
             .ReturnsAsync(CreateInboxSnapshot(unreadCount: 0));
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
@@ -122,6 +144,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         getCurrentDisplayStateCalls.Should().Be(1);
         refreshCalls.Should().Be(1);
         inboxCalls.Should().Be(1);
+        capturedRefreshToken.CanBeCanceled.Should().BeFalse();
+        capturedInboxToken.CanBeCanceled.Should().BeFalse();
         timerFactory.CreateCalls.Should().Be(2);
     }
 
