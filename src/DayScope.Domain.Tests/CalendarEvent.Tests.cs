@@ -183,4 +183,34 @@ public sealed class CalendarEventTests
         // Assert
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
+
+    [Fact(DisplayName = "Absolute join links are preserved and blank descriptions normalize to null.")]
+    [Trait("Category", "Unit")]
+    public void CtorShouldPreserveAbsoluteJoinLinksAndNormalizeBlankDescriptionsToNull()
+    {
+        // Arrange
+        var start = new DateTimeOffset(2026, 4, 14, 9, 0, 0, TimeSpan.Zero);
+        var joinUri = new Uri("https://meet.google.com/abc-defg-hij");
+
+        // Act
+        var calendarEvent = new CalendarEvent(
+            " Standup ",
+            start,
+            start.AddMinutes(30),
+            false,
+            CalendarParticipationStatus.Accepted,
+            CalendarEventKind.Default,
+            " ",
+            " ",
+            " ",
+            joinUri,
+            null);
+
+        // Assert
+        calendarEvent.Title.Should().Be("Standup");
+        calendarEvent.Description.Should().BeNull();
+        calendarEvent.JoinUrl.Should().Be(joinUri);
+        calendarEvent.OrganizerDisplayLabel.Should().BeNull();
+        calendarEvent.Participants.Should().BeEmpty();
+    }
 }
