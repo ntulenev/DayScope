@@ -72,4 +72,43 @@ public sealed class DayScheduleSettingsTests
         failures.Should().ContainSingle()
             .Which.Should().Be("DaySchedule:EndHour must be greater than StartHour.");
     }
+
+    [Fact(DisplayName = "Validation succeeds when the schedule bounds are valid.")]
+    [Trait("Category", "Unit")]
+    public void ValidateShouldSucceedWhenTheScheduleBoundsAreValid()
+    {
+        // Arrange
+        var settings = new DayScheduleSettings
+        {
+            StartHour = 6,
+            EndHour = 20
+        };
+
+        // Act
+        var failures = settings.Validate();
+
+        // Assert
+        failures.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Normalization converts blank optional labels to null.")]
+    [Trait("Category", "Unit")]
+    public void NormalizeShouldConvertBlankOptionalLabelsToNull()
+    {
+        // Arrange
+        var settings = new DayScheduleSettings
+        {
+            PrimaryTimeZoneLabel = " ",
+            SecondaryTimeZoneId = " ",
+            SecondaryTimeZoneLabel = " "
+        };
+
+        // Act
+        settings.Normalize();
+
+        // Assert
+        settings.PrimaryTimeZoneLabel.Should().BeNull();
+        settings.SecondaryTimeZoneId.Should().BeNull();
+        settings.SecondaryTimeZoneLabel.Should().BeNull();
+    }
 }

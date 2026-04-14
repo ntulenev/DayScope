@@ -49,4 +49,45 @@ public sealed class GoogleCalendarSettingsTests
         failures.Should().ContainSingle()
             .Which.Should().Be("GoogleCalendar:CalendarId must be configured.");
     }
+
+    [Fact(DisplayName = "Validation succeeds when Google Calendar is disabled and the calendar identifier is blank.")]
+    [Trait("Category", "Unit")]
+    public void ValidateShouldSucceedWhenGoogleCalendarIsDisabledAndCalendarIdIsBlank()
+    {
+        // Arrange
+        var settings = new GoogleCalendarSettings
+        {
+            Enabled = false,
+            CalendarId = " "
+        };
+
+        // Act
+        var failures = settings.Validate();
+
+        // Assert
+        failures.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Normalization clamps refresh minutes to the minimum and clears blank login hints.")]
+    [Trait("Category", "Unit")]
+    public void NormalizeShouldClampRefreshMinutesToTheMinimumAndClearBlankLoginHints()
+    {
+        // Arrange
+        var settings = new GoogleCalendarSettings
+        {
+            RefreshMinutes = 0,
+            ClientSecretsPath = null!,
+            TokenStoreDirectory = null!,
+            LoginHint = " "
+        };
+
+        // Act
+        settings.Normalize();
+
+        // Assert
+        settings.RefreshMinutes.Should().Be(1);
+        settings.ClientSecretsPath.Should().BeEmpty();
+        settings.TokenStoreDirectory.Should().BeEmpty();
+        settings.LoginHint.Should().BeNull();
+    }
 }
