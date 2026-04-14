@@ -43,5 +43,10 @@ public enum AppThemeMode
     /// <summary>
     /// Uses a Visual Studio-inspired coding palette.
     /// </summary>
-    Code = 7
+    Code = 7,
+
+    /// <summary>
+    /// Uses a neon cyberpunk palette with violet surfaces.
+    /// </summary>
+    Cyberpunk = 8
 }
