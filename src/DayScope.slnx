@@ -3,6 +3,7 @@
   <Project Path="DayScope.Application/DayScope.Application.csproj" />
   <Project Path="DayScope.Domain.Tests/DayScope.Domain.Tests.csproj" />
   <Project Path="DayScope.Domain/DayScope.Domain.csproj" />
+  <Project Path="DayScope.Infrastructure.Tests/DayScope.Infrastructure.Tests.csproj" />
   <Project Path="DayScope.Infrastructure/DayScope.Infrastructure.csproj" />
   <Project Path="DayScope/DayScope.csproj" />
 </Solution>
