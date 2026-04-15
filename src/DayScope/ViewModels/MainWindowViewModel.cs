@@ -64,7 +64,11 @@ public sealed class MainWindowViewModel : IDisposable
     /// Opens the details overlay for the provided event view model.
     /// </summary>
     /// <param name="eventState">The selected timed or all-day event display state.</param>
-    public void OpenEventDetails(object? eventState) => EventDetails.Open(eventState);
+    public void OpenEventDetails(object? eventState)
+    {
+        EventDetails.ApplyGoogleAccountEmail(Inbox.GoogleAccountEmail);
+        EventDetails.Open(eventState);
+    }
 
     /// <summary>
     /// Closes the event details overlay.
@@ -97,6 +101,7 @@ public sealed class MainWindowViewModel : IDisposable
     private void OnInboxSnapshotChanged(object? sender, EmailInboxSnapshotChangedEventArgs e)
     {
         Inbox.ApplySnapshot(e.Snapshot);
+        EventDetails.ApplyGoogleAccountEmail(Inbox.GoogleAccountEmail);
     }
 
     private readonly MainWindowDashboardCoordinator _dashboardCoordinator;

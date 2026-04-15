@@ -27,6 +27,8 @@ public sealed class MainWindowInboxState : ObservableObject
 
     public Uri GoogleCalendarUri => _googleCalendarUri;
 
+    public string? GoogleAccountEmail => _googleAccountEmail;
+
     public string UnreadEmailCountText => _unreadEmailCount switch
     {
         null => "--",

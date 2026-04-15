@@ -251,6 +251,51 @@ public sealed class MainWindowViewModelTests
         viewModel.EventDetails.IsOpen.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Opening event details after inbox initialization uses the signed-in Google account for Meet links.")]
+    [Trait("Category", "Unit")]
+    public async Task OpenEventDetailsShouldUseSignedInGoogleAccountForMeetLinks()
+    {
+        // Arrange
+        var inboxSnapshot = new EmailInboxSnapshot(
+            1,
+            " user@example.com ",
+            new Uri("https://mail.google.com/mail/u/?authuser=user%40example.com#inbox"));
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            inboxSnapshot,
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        using var viewModel = new MainWindowViewModel(coordinator, inbox);
+        var details = CreateDetails();
+        var eventState = new TimedEventDisplayState(
+            "Standup",
+            "9:00AM - 10:00AM",
+            0,
+            60,
+            0,
+            200,
+            false,
+            false,
+            true,
+            true,
+            EventAppearance.Accepted,
+            "Accepted",
+            string.Empty,
+            details);
+        await viewModel.InitializeAsync();
+
+        // Act
+        viewModel.OpenEventDetails(eventState);
+
+        // Assert
+        viewModel.EventDetails.SelectedEventDetails.Should().NotBeSameAs(details);
+        viewModel.EventDetails.SelectedEventDetails!.JoinUrl.Should().Be(
+            new Uri("https://meet.google.com/abc-defg-hij?authuser=user%40example.com"));
+    }
+
     [Fact(DisplayName = "Updating the available schedule width delegates to the coordinator and updates the schedule state.")]
     [Trait("Category", "Unit")]
     public void UpdateAvailableScheduleWidthShouldDelegateToCoordinatorAndUpdateScheduleState()
