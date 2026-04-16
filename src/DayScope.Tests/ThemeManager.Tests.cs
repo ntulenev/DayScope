@@ -123,6 +123,29 @@ public sealed class ThemeManagerTests
         themeManager.IsDarkTheme.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Setting Deep sea applies the dedicated dark theme mode.")]
+    [Trait("Category", "Unit")]
+    public void SetThemeModeShouldApplyDeepSeaTheme()
+    {
+        // Arrange
+        var preferenceStore = new RecordingThemePreferenceStore(AppThemeMode.Os);
+        var themeDetector = new RecordingOsThemeDetector(AppThemeMode.Light);
+        var resourceApplier = new RecordingThemeResourceApplier();
+        using var themeManager = new ThemeManager(preferenceStore, themeDetector, resourceApplier);
+
+        themeManager.Initialize();
+
+        // Act
+        themeManager.SetThemeMode(AppThemeMode.DeepSea);
+
+        // Assert
+        themeManager.SelectedMode.Should().Be(AppThemeMode.DeepSea);
+        themeManager.IsDarkTheme.Should().BeTrue();
+        preferenceStore.SavedModes.Should().ContainSingle()
+            .Which.Should().Be(AppThemeMode.DeepSea);
+        resourceApplier.AppliedModes.Should().ContainInOrder(AppThemeMode.Light, AppThemeMode.DeepSea);
+    }
+
     private sealed class RecordingThemePreferenceStore(AppThemeMode loadedMode) : IThemePreferenceStore
     {
         public int LoadCalls { get; private set; }

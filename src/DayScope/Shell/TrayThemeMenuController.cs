@@ -17,7 +17,8 @@ internal sealed class TrayThemeMenuController
         (AppThemeMode.DarkPink, "Dark Pink"),
         (AppThemeMode.Matrix, "Matrix"),
         (AppThemeMode.Code, "Code"),
-        (AppThemeMode.Cyberpunk, "Cyberpunk")
+        (AppThemeMode.Cyberpunk, "Cyberpunk"),
+        (AppThemeMode.DeepSea, "Deep sea")
     ];
 
     private readonly Action<AppThemeMode> _setThemeModeAction;

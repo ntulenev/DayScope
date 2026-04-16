@@ -262,6 +262,74 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <Grid Grid.RowSpan="3"
+              Margin="-18"
+              IsHitTestVisible="False"
+              ClipToBounds="True">
+            <Rectangle Fill="{DynamicResource ThemeBackdropOverlayBrush}" />
+
+            <Ellipse Width="680"
+                     Height="340"
+                     Margin="-150,-220,0,0"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Top"
+                     Fill="{DynamicResource ThemeSurfaceGlowBrush}" />
+
+            <Viewbox Stretch="Fill">
+                <Canvas Width="1000"
+                        Height="720">
+                    <Path Fill="{DynamicResource ThemeLightRayBrush}"
+                          Data="M 88,0 L 176,0 L 310,540 L 194,540 Z" />
+                    <Path Fill="{DynamicResource ThemeLightRayBrush}"
+                          Data="M 272,0 L 364,0 L 534,560 L 412,560 Z" />
+                    <Path Fill="{DynamicResource ThemeLightRayBrush}"
+                          Data="M 512,0 L 600,0 L 734,530 L 620,530 Z" />
+
+                    <Path Fill="{DynamicResource ThemeSeabedBrush}"
+                          Data="M 0,552 C 122,510 250,532 360,576 C 470,620 612,624 744,592 C 852,566 938,554 1000,572 L 1000,720 L 0,720 Z" />
+
+                    <Path Stroke="{DynamicResource ThemeSeaweedSecondaryBrush}"
+                          StrokeThickness="7"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M 70,694 C 62,646 78,606 98,570 C 118,534 128,494 116,446" />
+                    <Path Stroke="{DynamicResource ThemeSeaweedBrush}"
+                          StrokeThickness="8"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M 114,698 C 108,646 126,602 150,566 C 174,528 184,494 172,454" />
+                    <Path Stroke="{DynamicResource ThemeSeaweedSecondaryBrush}"
+                          StrokeThickness="7"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M 166,700 C 162,656 176,618 196,586 C 216,552 228,516 222,480" />
+                    <Path Stroke="{DynamicResource ThemeSeaweedBrush}"
+                          StrokeThickness="8"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M 850,700 C 842,648 856,606 882,568 C 906,534 918,498 910,454" />
+                    <Path Stroke="{DynamicResource ThemeSeaweedSecondaryBrush}"
+                          StrokeThickness="7"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M 908,702 C 900,654 914,612 934,580 C 952,550 964,514 958,482" />
+
+                    <Path Stroke="{DynamicResource ThemeCoralBrush}"
+                          StrokeThickness="8"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Data="M 790,662 C 784,620 784,584 790,546 M 790,574 C 766,550 748,526 734,492 M 792,586 C 820,558 838,530 848,494 M 796,622 C 826,608 852,586 870,560" />
+                    <Path Stroke="{DynamicResource ThemeCoralSecondaryBrush}"
+                          StrokeThickness="7"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Data="M 258,668 C 252,630 252,598 258,566 M 258,590 C 236,572 220,550 208,524 M 262,606 C 286,586 300,562 306,534 M 264,634 C 286,626 304,612 320,594" />
+                </Canvas>
+            </Viewbox>
+        </Grid>
+
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

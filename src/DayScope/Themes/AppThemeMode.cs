@@ -48,5 +48,10 @@ public enum AppThemeMode
     /// <summary>
     /// Uses a neon cyberpunk palette with violet surfaces.
     /// </summary>
-    Cyberpunk = 8
+    Cyberpunk = 8,
+
+    /// <summary>
+    /// Uses a Mediterranean deep-sea palette with underwater highlights.
+    /// </summary>
+    DeepSea = 9
 }
