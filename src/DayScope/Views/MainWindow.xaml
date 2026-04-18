@@ -1,4 +1,5 @@
 <Window x:Class="DayScope.Views.MainWindow"
+        x:Name="RootWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:day="clr-namespace:DayScope.Application.DaySchedule;assembly=DayScope.Application"
@@ -253,6 +254,56 @@
             <Setter Property="Height" Value="34" />
             <Setter Property="Padding" Value="0" />
         </Style>
+
+        <Style x:Key="HeaderMenuButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource HeaderShortcutButtonStyle}">
+            <Setter Property="Width" Value="44" />
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <Style x:Key="HeaderMenuPopupButtonStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="12">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HeaderHoverBackgroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HeaderPressedBackgroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HeaderMenuPopupSubButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource HeaderMenuPopupButtonStyle}">
+            <Setter Property="Padding" Value="14,8" />
+        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
@@ -422,44 +473,183 @@
                 </Button>
             </StackPanel>
 
-            <Button Grid.Column="2"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                        ToolTip="{Binding Inbox.UnreadEmailSummaryText}"
-                    Style="{StaticResource HeaderShortcutButtonStyle}"
-                    Click="OnOpenUnreadEmailsClick">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="12" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <Button ToolTip="{Binding Inbox.UnreadEmailSummaryText}"
+                        Style="{StaticResource HeaderShortcutButtonStyle}"
+                        Click="OnOpenUnreadEmailsClick">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0"
-                               VerticalAlignment="Center"
-                               FontFamily="{StaticResource UiFont}"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource HeaderTextBrush}"
-                               Text="Unread Emails" />
-
-                    <Border Grid.Column="2"
-                            MinWidth="38"
-                            Height="28"
-                            Padding="10,0"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource UnreadEmailBadgeStyle}">
-                        <TextBlock FontFamily="{StaticResource UiFont}"
-                                   FontSize="12"
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center"
+                        <TextBlock Grid.Column="0"
                                    VerticalAlignment="Center"
-                                   Text="{Binding Inbox.UnreadEmailCountText}" />
-                    </Border>
+                                   FontFamily="{StaticResource UiFont}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource HeaderTextBrush}"
+                                   Text="Unread Emails" />
+
+                        <Border Grid.Column="2"
+                                MinWidth="38"
+                                Height="28"
+                                Padding="10,0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource UnreadEmailBadgeStyle}">
+                            <TextBlock FontFamily="{StaticResource UiFont}"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding Inbox.UnreadEmailCountText}" />
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Grid Margin="10,0,0,0">
+                    <Button x:Name="HeaderMenuButton"
+                            ToolTip="Settings"
+                            Style="{StaticResource HeaderMenuButtonStyle}"
+                            ClickMode="Press"
+                            Click="OnToggleHeaderMenuClick">
+                        <Path Width="18"
+                              Height="14"
+                              Stretch="Fill"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Stroke="{DynamicResource HeaderTextBrush}"
+                              StrokeThickness="1.8"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Data="M 2,2 L 16,2 M 2,7 L 16,7 M 2,12 L 16,12" />
+                    </Button>
+
+                    <Popup x:Name="HeaderMenuPopup"
+                           Placement="Bottom"
+                           PlacementTarget="{Binding ElementName=HeaderMenuButton}"
+                           VerticalOffset="10"
+                           AllowsTransparency="True"
+                           PopupAnimation="Fade"
+                           StaysOpen="False"
+                           Closed="OnHeaderMenuClosed">
+                        <Border MinWidth="244"
+                                Padding="8"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18">
+                            <StackPanel>
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnHideToTrayClick">
+                                    <TextBlock FontFamily="{StaticResource UiFont}"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               Text="Hide to tray" />
+                                </Button>
+
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnRefreshFromHeaderMenuClickAsync">
+                                    <TextBlock FontFamily="{StaticResource UiFont}"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               Text="Refresh now" />
+                                </Button>
+
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnToggleThemeMenuClick">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock FontFamily="{StaticResource UiFont}"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   Text="Theme" />
+                                        <TextBlock Grid.Column="1"
+                                                   FontFamily="{StaticResource UiFont}"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Text="&gt;" />
+                                    </Grid>
+                                </Button>
+
+                                <Border x:Name="ThemeMenuItemsPanel"
+                                        Margin="0,4,0,0"
+                                        Padding="6,0,0,0"
+                                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                        BorderThickness="1,0,0,0"
+                                        Visibility="Collapsed">
+                                    <ItemsControl ItemsSource="{Binding ElementName=RootWindow, Path=ThemeMenuOptions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource HeaderMenuPopupSubButtonStyle}"
+                                                        Click="OnThemeModeMenuItemClick">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="18" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Ellipse Width="6"
+                                                                 Height="6"
+                                                                 Fill="{DynamicResource AccentDangerBrush}"
+                                                                 HorizontalAlignment="Center"
+                                                                 VerticalAlignment="Center"
+                                                                 Visibility="{Binding IsSelected, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                                        <TextBlock Grid.Column="1"
+                                                                   FontFamily="{StaticResource UiFont}"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                   Text="{Binding Label}">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+
+                                <Border Height="1"
+                                        Margin="6,8"
+                                        Background="{DynamicResource BorderSubtleBrush}" />
+
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnExitFromHeaderMenuClick">
+                                    <TextBlock FontFamily="{StaticResource UiFont}"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               Text="Exit" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
                 </Grid>
-            </Button>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1"

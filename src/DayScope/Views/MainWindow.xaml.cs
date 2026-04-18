@@ -1,15 +1,16 @@
-using System.Windows;
-using System.Windows.Input;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text;
-
-using Microsoft.Extensions.Options;
+using System.Windows;
+using System.Windows.Input;
 
 using DayScope.Application.DaySchedule;
 using DayScope.Domain.Configuration;
 using DayScope.Platform;
 using DayScope.Themes;
 using DayScope.ViewModels;
+
+using Microsoft.Extensions.Options;
 
 namespace DayScope.Views;
 
@@ -20,6 +21,11 @@ public partial class MainWindow : Window
 {
     private readonly MainWindowShellController _shellController;
     private readonly MainWindowThemeController _themeController;
+
+    /// <summary>
+    /// Gets the theme options rendered in the header menu.
+    /// </summary>
+    public ObservableCollection<MainWindowThemeOptionViewModel> ThemeMenuOptions { get; } = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -50,11 +56,20 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         _uriLauncher = uriLauncher;
         _clipboardService = clipboardService;
+        _themeManager = themeManager;
         _shellController = new MainWindowShellController();
         _themeController = new MainWindowThemeController(themeManager, windowChromeController);
 
+        foreach (var option in AppThemeOptions.All)
+        {
+            ThemeMenuOptions.Add(new MainWindowThemeOptionViewModel(option.Mode, option.Label));
+        }
+
+        UpdateThemeMenuSelection();
+
         MainWindowShellController.ApplyWindowSettings(this, windowOptions.Value);
         _themeController.Attach(this);
+        _themeManager.ThemeChanged += OnThemeChanged;
         SizeChanged += OnSizeChanged;
         Closing += OnClosing;
         Closed += OnClosed;
@@ -73,18 +88,12 @@ public partial class MainWindow : Window
     /// <summary>
     /// Shows the window from the tray and restores focus to it.
     /// </summary>
-    public void ShowFromTray()
-    {
-        MainWindowShellController.ShowFromTray(this, OnShownFromTray);
-    }
+    public void ShowFromTray() => MainWindowShellController.ShowFromTray(this, OnShownFromTray);
 
     /// <summary>
     /// Hides the window to the system tray.
     /// </summary>
-    public void HideToTray()
-    {
-        MainWindowShellController.HideToTray(this);
-    }
+    public void HideToTray() => MainWindowShellController.HideToTray(this);
 
     /// <summary>
     /// Requests an immediate dashboard refresh.
@@ -95,10 +104,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Allows the window to close instead of minimizing to the tray.
     /// </summary>
-    public void CloseFromTray()
-    {
-        _shellController.CloseFromTray(this);
-    }
+    public void CloseFromTray() => _shellController.CloseFromTray(this);
 
     /// <summary>
     /// Opens details when the user clicks an event card.
@@ -132,10 +138,7 @@ public partial class MainWindow : Window
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="e">The routed event arguments.</param>
-    private void OnCloseEventDetailsClick(object sender, RoutedEventArgs e)
-    {
-        _viewModel.CloseEventDetails();
-    }
+    private void OnCloseEventDetailsClick(object sender, RoutedEventArgs e) => _viewModel.CloseEventDetails();
 
     /// <summary>
     /// Opens the selected event link in the default browser.
@@ -157,9 +160,89 @@ public partial class MainWindow : Window
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="e">The routed event arguments.</param>
-    private void OnOpenUnreadEmailsClick(object sender, RoutedEventArgs e)
+    private void OnOpenUnreadEmailsClick(object sender, RoutedEventArgs e) => _uriLauncher.Open(_viewModel.Inbox.UnreadEmailInboxUri);
+
+    /// <summary>
+    /// Toggles the header settings menu anchored next to the unread-email shortcut.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnToggleHeaderMenuClick(object sender, RoutedEventArgs e)
     {
-        _uriLauncher.Open(_viewModel.Inbox.UnreadEmailInboxUri);
+        HeaderMenuPopup.IsOpen = !HeaderMenuPopup.IsOpen;
+        if (!HeaderMenuPopup.IsOpen)
+        {
+            CollapseThemeMenu();
+        }
+    }
+
+    /// <summary>
+    /// Collapses the nested theme section after the popup closes.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The event arguments.</param>
+    private void OnHeaderMenuClosed(object? sender, EventArgs e) => CollapseThemeMenu();
+
+    /// <summary>
+    /// Shows or hides the theme section inside the header menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnToggleThemeMenuClick(object sender, RoutedEventArgs e)
+    {
+        ThemeMenuItemsPanel.Visibility = ThemeMenuItemsPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Triggers an immediate refresh from the in-window settings menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private async void OnRefreshFromHeaderMenuClickAsync(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        await RefreshNowAsync();
+    }
+
+    /// <summary>
+    /// Hides the main window to the tray from the in-window settings menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnHideToTrayClick(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        HideToTray();
+    }
+
+    /// <summary>
+    /// Applies the selected theme from the in-window settings menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnThemeModeMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: MainWindowThemeOptionViewModel option })
+        {
+            return;
+        }
+
+        _themeManager.SetThemeMode(option.Mode);
+        CloseHeaderMenu();
+    }
+
+    /// <summary>
+    /// Exits the application from the in-window settings menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnExitFromHeaderMenuClick(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        CloseFromTray();
+        System.Windows.Application.Current?.Shutdown();
     }
 
     /// <summary>
@@ -167,10 +250,7 @@ public partial class MainWindow : Window
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="e">The routed event arguments.</param>
-    private void OnOpenGoogleCalendarClick(object sender, RoutedEventArgs e)
-    {
-        _uriLauncher.Open(_viewModel.Inbox.GoogleCalendarUri);
-    }
+    private void OnOpenGoogleCalendarClick(object sender, RoutedEventArgs e) => _uriLauncher.Open(_viewModel.Inbox.GoogleCalendarUri);
 
     /// <summary>
     /// Navigates to the previous day.
@@ -241,30 +321,21 @@ public partial class MainWindow : Window
     /// <summary>
     /// Scrolls the schedule so the current-time marker is visible.
     /// </summary>
-    private void ScrollScheduleToNowLine()
-    {
-        MainWindowViewportController.ScrollToNowLine(_viewModel, ScheduleScrollViewer);
-    }
+    private void ScrollScheduleToNowLine() => MainWindowViewportController.ScrollToNowLine(_viewModel, ScheduleScrollViewer);
 
     /// <summary>
     /// Hides the window to the tray unless tray-driven close is allowed.
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="e">The cancel event arguments.</param>
-    private void OnClosing(object? sender, CancelEventArgs e)
-    {
-        _shellController.HandleClosing(this, e);
-    }
+    private void OnClosing(object? sender, CancelEventArgs e) => _shellController.HandleClosing(this, e);
 
     /// <summary>
     /// Recalculates layout-dependent viewport values after the window size changes.
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="e">The event arguments.</param>
-    private void OnSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        UpdateScheduleWidth();
-    }
+    private void OnSizeChanged(object sender, SizeChangedEventArgs e) => UpdateScheduleWidth();
 
     /// <summary>
     /// Applies post-show layout updates after the tray restores the main window.
@@ -283,9 +354,37 @@ public partial class MainWindow : Window
     /// <param name="e">The event arguments.</param>
     private void OnClosed(object? sender, EventArgs e)
     {
+        _themeManager.ThemeChanged -= OnThemeChanged;
         _themeController.Detach(this);
         _viewModel.Dispose();
     }
+
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(UpdateThemeMenuSelection);
+            return;
+        }
+
+        UpdateThemeMenuSelection();
+    }
+
+    private void UpdateThemeMenuSelection()
+    {
+        foreach (var option in ThemeMenuOptions)
+        {
+            option.IsSelected = option.Mode == _themeManager.SelectedMode;
+        }
+    }
+
+    private void CloseHeaderMenu()
+    {
+        HeaderMenuPopup.IsOpen = false;
+        CollapseThemeMenu();
+    }
+
+    private void CollapseThemeMenu() => ThemeMenuItemsPanel.Visibility = Visibility.Collapsed;
 
     private static string BuildEventDetailsClipboardText(
         EventDetailsDisplayState eventDetails,
@@ -313,4 +412,5 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly IUriLauncher _uriLauncher;
     private readonly IClipboardService _clipboardService;
+    private readonly ThemeManager _themeManager;
 }

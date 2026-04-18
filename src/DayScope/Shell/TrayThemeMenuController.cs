@@ -7,20 +7,6 @@ namespace DayScope.Shell;
 /// </summary>
 internal sealed class TrayThemeMenuController
 {
-    private static readonly (AppThemeMode Mode, string Label)[] _themeModes =
-    [
-        (AppThemeMode.Os, "OS"),
-        (AppThemeMode.Light, "Light"),
-        (AppThemeMode.Dark, "Dark"),
-        (AppThemeMode.Forest, "Forest"),
-        (AppThemeMode.Autumn, "Autumn"),
-        (AppThemeMode.DarkPink, "Dark Pink"),
-        (AppThemeMode.Matrix, "Matrix"),
-        (AppThemeMode.Code, "Code"),
-        (AppThemeMode.Cyberpunk, "Cyberpunk"),
-        (AppThemeMode.DeepSea, "Deep sea")
-    ];
-
     private readonly Action<AppThemeMode> _setThemeModeAction;
     private readonly Dictionary<AppThemeMode, ToolStripMenuItem> _menuItems = [];
 
@@ -42,11 +28,11 @@ internal sealed class TrayThemeMenuController
     public ToolStripMenuItem CreateMenuItem()
     {
         var rootItem = new ToolStripMenuItem("Theme");
-        foreach (var (mode, label) in _themeModes)
+        foreach (var option in AppThemeOptions.All)
         {
-            var menuItem = new ToolStripMenuItem(label);
-            menuItem.Click += (_, _) => _setThemeModeAction(mode);
-            _menuItems.Add(mode, menuItem);
+            var menuItem = new ToolStripMenuItem(option.Label);
+            menuItem.Click += (_, _) => _setThemeModeAction(option.Mode);
+            _menuItems.Add(option.Mode, menuItem);
             rootItem.DropDownItems.Add(menuItem);
         }
 
