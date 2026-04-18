@@ -196,6 +196,23 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Toggles whether the configured secondary time zone is shown in the schedule.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnToggleSecondaryTimeZoneClick(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.ToggleShowSecondaryTimeZone())
+        {
+            return;
+        }
+
+        CloseHeaderMenu();
+        UpdateLayout();
+        UpdateScheduleWidth();
+    }
+
+    /// <summary>
     /// Triggers an immediate refresh from the in-window settings menu.
     /// </summary>
     /// <param name="sender">The event sender.</param>

@@ -44,11 +44,19 @@ public sealed class MainWindowScheduleState : ObservableObject
 
     public string? SecondaryTimeZoneLabel { get; private set => SetProperty(ref field, value); }
 
+    public bool HasConfiguredSecondaryTimeZone { get; private set => SetProperty(ref field, value); }
+
+    public bool ShowSecondaryTimeZone => _showSecondaryTimeZone;
+
     public bool HasSecondaryTimeZone { get; private set => SetProperty(ref field, value); }
 
     public GridLength PrimaryTimeColumnWidth { get; private set => SetProperty(ref field, value); } = new(72);
 
+    public GridLength SecondaryTimeZoneLeadingGapWidth { get; private set => SetProperty(ref field, value); } = new(0);
+
     public GridLength SecondaryTimeColumnWidth { get; private set => SetProperty(ref field, value); } = new(0);
+
+    public GridLength SecondaryTimeZoneTrailingGapWidth { get; private set => SetProperty(ref field, value); } = new(4);
 
     public double ScheduleCanvasWidth { get; private set => SetProperty(ref field, value); } = 860;
 
@@ -79,11 +87,9 @@ public sealed class MainWindowScheduleState : ObservableObject
         DateText = state.DateText;
         PrimaryTimeZoneLabel = state.PrimaryTimeZoneLabel;
         SecondaryTimeZoneLabel = state.SecondaryTimeZoneLabel;
-        HasSecondaryTimeZone = !string.IsNullOrWhiteSpace(state.SecondaryTimeZoneLabel);
+        HasConfiguredSecondaryTimeZone = !string.IsNullOrWhiteSpace(state.SecondaryTimeZoneLabel);
         PrimaryTimeColumnWidth = ResolveTimeColumnWidth(state.PrimaryTimeZoneLabel);
-        SecondaryTimeColumnWidth = HasSecondaryTimeZone
-            ? ResolveTimeColumnWidth(state.SecondaryTimeZoneLabel)
-            : new GridLength(0);
+        ApplySecondaryTimeZoneVisibility();
         ScheduleCanvasWidth = state.ScheduleCanvasWidth;
         TimelineHeight = state.TimelineHeight;
         StatusText = state.StatusText;
@@ -96,6 +102,22 @@ public sealed class MainWindowScheduleState : ObservableObject
         ReplaceCollection(_secondaryTimelineHoursSource, state.SecondaryTimelineHours);
         ReplaceCollection(_allDayEventsSource, state.AllDayEvents);
         ReplaceCollection(_timedEventsSource, state.TimedEvents);
+    }
+
+    /// <summary>
+    /// Updates whether the configured secondary time zone should be shown in the UI.
+    /// </summary>
+    /// <param name="showSecondaryTimeZone">Whether the secondary time zone should be visible.</param>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool SetShowSecondaryTimeZone(bool showSecondaryTimeZone)
+    {
+        if (!SetProperty(ref _showSecondaryTimeZone, showSecondaryTimeZone, nameof(ShowSecondaryTimeZone)))
+        {
+            return false;
+        }
+
+        ApplySecondaryTimeZoneVisibility();
+        return true;
     }
 
     private static void ReplaceCollection<T>(
@@ -125,8 +147,23 @@ public sealed class MainWindowScheduleState : ObservableObject
         return new GridLength(width);
     }
 
+    private void ApplySecondaryTimeZoneVisibility()
+    {
+        HasSecondaryTimeZone = HasConfiguredSecondaryTimeZone && ShowSecondaryTimeZone;
+        SecondaryTimeZoneLeadingGapWidth = HasSecondaryTimeZone
+            ? new GridLength(8)
+            : new GridLength(0);
+        SecondaryTimeColumnWidth = HasSecondaryTimeZone
+            ? ResolveTimeColumnWidth(SecondaryTimeZoneLabel)
+            : new GridLength(0);
+        SecondaryTimeZoneTrailingGapWidth = HasSecondaryTimeZone
+            ? new GridLength(8)
+            : new GridLength(4);
+    }
+
     private readonly ObservableCollection<TimelineHourDisplayState> _primaryTimelineHoursSource = [];
     private readonly ObservableCollection<TimelineHourDisplayState> _secondaryTimelineHoursSource = [];
     private readonly ObservableCollection<AllDayEventDisplayState> _allDayEventsSource = [];
     private readonly ObservableCollection<TimedEventDisplayState> _timedEventsSource = [];
+    private bool _showSecondaryTimeZone = true;
 }

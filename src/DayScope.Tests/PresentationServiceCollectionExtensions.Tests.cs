@@ -1,7 +1,3 @@
-using FluentAssertions;
-
-using Microsoft.Extensions.DependencyInjection;
-
 using DayScope.DependencyInjection;
 using DayScope.Platform;
 using DayScope.Shell;
@@ -9,6 +5,10 @@ using DayScope.Themes;
 using DayScope.Threading;
 using DayScope.ViewModels;
 using DayScope.Views;
+
+using FluentAssertions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DayScope.Tests;
 
@@ -28,6 +28,10 @@ public sealed class PresentationServiceCollectionExtensionsTests
         services.Should().Contain(descriptor =>
             descriptor.ServiceType == typeof(IThemePreferenceStore) &&
             descriptor.ImplementationType == typeof(ThemePreferenceStore) &&
+            descriptor.Lifetime == ServiceLifetime.Singleton);
+        services.Should().Contain(descriptor =>
+            descriptor.ServiceType == typeof(ISecondaryTimeZonePreferenceStore) &&
+            descriptor.ImplementationFactory != null &&
             descriptor.Lifetime == ServiceLifetime.Singleton);
         services.Should().Contain(descriptor =>
             descriptor.ServiceType == typeof(IOsThemeDetector) &&

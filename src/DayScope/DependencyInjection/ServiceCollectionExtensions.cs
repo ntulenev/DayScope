@@ -1,11 +1,11 @@
-using Microsoft.Extensions.DependencyInjection;
-
 using DayScope.Platform;
 using DayScope.Shell;
 using DayScope.Themes;
 using DayScope.Threading;
 using DayScope.ViewModels;
 using DayScope.Views;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DayScope.DependencyInjection;
 
@@ -24,6 +24,8 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IThemePreferenceStore, ThemePreferenceStore>();
+        services.AddSingleton<ISecondaryTimeZonePreferenceStore>(serviceProvider =>
+            (ThemePreferenceStore)serviceProvider.GetRequiredService<IThemePreferenceStore>());
         services.AddSingleton<IOsThemeDetector, WindowsOsThemeDetector>();
         services.AddSingleton<IThemeResourceApplier, ApplicationThemeResourceApplier>();
         services.AddSingleton<ThemeManager>();

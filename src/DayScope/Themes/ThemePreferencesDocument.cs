@@ -1,7 +1,17 @@
 namespace DayScope.Themes;
 
 /// <summary>
-/// Represents the serialized theme preference payload.
+/// Represents the serialized user-preference payload.
 /// </summary>
-/// <param name="ThemeMode">The persisted theme mode.</param>
-internal sealed record ThemePreferencesDocument(AppThemeMode ThemeMode);
+internal sealed class ThemePreferencesDocument
+{
+    /// <summary>
+    /// Gets the persisted theme mode.
+    /// </summary>
+    public AppThemeMode ThemeMode { get; init; } = AppThemeMode.Os;
+
+    /// <summary>
+    /// Gets the persisted secondary-time-zone visibility preference.
+    /// </summary>
+    public bool? ShowSecondaryTimeZone { get; init; }
+}

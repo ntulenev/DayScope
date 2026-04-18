@@ -1,7 +1,7 @@
-using FluentAssertions;
-
 using DayScope.Application.DaySchedule;
 using DayScope.ViewModels;
+
+using FluentAssertions;
 
 namespace DayScope.Tests;
 
@@ -29,9 +29,13 @@ public sealed class MainWindowScheduleStateTests
         state.DateText.Should().Be("Tuesday, 14 April");
         state.PrimaryTimeZoneLabel.Should().Be("UTC+09:30");
         state.SecondaryTimeZoneLabel.Should().Be("UTC+01:00");
+        state.HasConfiguredSecondaryTimeZone.Should().BeTrue();
+        state.ShowSecondaryTimeZone.Should().BeTrue();
         state.HasSecondaryTimeZone.Should().BeTrue();
         state.PrimaryTimeColumnWidth.Value.Should().Be(73);
+        state.SecondaryTimeZoneLeadingGapWidth.Value.Should().Be(8);
         state.SecondaryTimeColumnWidth.Value.Should().Be(73);
+        state.SecondaryTimeZoneTrailingGapWidth.Value.Should().Be(8);
         state.ScheduleCanvasWidth.Should().Be(860);
         state.TimelineHeight.Should().Be(1000);
         state.StatusText.Should().Be("Ready");
@@ -78,9 +82,12 @@ public sealed class MainWindowScheduleStateTests
         state.Apply(updatedState);
 
         // Assert
+        state.HasConfiguredSecondaryTimeZone.Should().BeFalse();
         state.HasSecondaryTimeZone.Should().BeFalse();
+        state.SecondaryTimeZoneLeadingGapWidth.Value.Should().Be(0);
         state.SecondaryTimeZoneLabel.Should().BeNull();
         state.SecondaryTimeColumnWidth.Value.Should().Be(0);
+        state.SecondaryTimeZoneTrailingGapWidth.Value.Should().Be(4);
         state.NowLineTop.Should().Be(-1);
         state.ShowNowLine.Should().BeFalse();
         state.PrimaryTimeColumnWidth.Value.Should().Be(72);
@@ -90,6 +97,31 @@ public sealed class MainWindowScheduleStateTests
         state.AllDayEvents.Should().ContainSingle();
         state.AllDayEvents[0].Title.Should().Be("Offsite");
         state.TimedEvents.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Hiding the secondary time zone preserves the configured label while collapsing its layout.")]
+    [Trait("Category", "Unit")]
+    public void SetShowSecondaryTimeZoneShouldCollapseSecondaryTimeZoneLayout()
+    {
+        // Arrange
+        var state = new MainWindowScheduleState();
+        state.Apply(CreateDisplayState(
+            primaryTimeZoneLabel: "UTC+09:30",
+            secondaryTimeZoneLabel: "UTC+01:00",
+            nowLineTop: 144));
+
+        // Act
+        var changed = state.SetShowSecondaryTimeZone(false);
+
+        // Assert
+        changed.Should().BeTrue();
+        state.HasConfiguredSecondaryTimeZone.Should().BeTrue();
+        state.ShowSecondaryTimeZone.Should().BeFalse();
+        state.HasSecondaryTimeZone.Should().BeFalse();
+        state.SecondaryTimeZoneLabel.Should().Be("UTC+01:00");
+        state.SecondaryTimeZoneLeadingGapWidth.Value.Should().Be(0);
+        state.SecondaryTimeColumnWidth.Value.Should().Be(0);
+        state.SecondaryTimeZoneTrailingGapWidth.Value.Should().Be(4);
     }
 
     private static DayScheduleDisplayState CreateDisplayState(

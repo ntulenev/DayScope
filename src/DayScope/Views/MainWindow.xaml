@@ -493,7 +493,7 @@
                                    FontSize="13"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource HeaderTextBrush}"
-                                   Text="Unread Emails" />
+                                   Text="Emails" />
 
                         <Border Grid.Column="2"
                                 MinWidth="38"
@@ -562,6 +562,35 @@
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="Refresh now" />
+                                </Button>
+
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnToggleSecondaryTimeZoneClick"
+                                        Visibility="{Binding Schedule.HasConfiguredSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="18" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Path Width="10"
+                                              Height="8"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Stroke="{DynamicResource AccentDangerBrush}"
+                                              StrokeThickness="1.8"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Visibility="{Binding Schedule.ShowSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}"
+                                              Data="M 1,4 L 4,7 L 9,1" />
+                                        <TextBlock Grid.Column="1"
+                                                   FontFamily="{StaticResource UiFont}"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   Text="Show secondary time zone" />
+                                    </Grid>
                                 </Button>
 
                                 <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
@@ -656,9 +685,9 @@
               Margin="0,16,0,8">
             <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{Binding Schedule.PrimaryTimeColumnWidth}" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="{Binding Schedule.SecondaryTimeZoneLeadingGapWidth}" />
                     <ColumnDefinition Width="{Binding Schedule.SecondaryTimeColumnWidth}" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="{Binding Schedule.SecondaryTimeZoneTrailingGapWidth}" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -670,8 +699,8 @@
             <TextBlock Grid.Column="2"
                        Style="{StaticResource HourLabelStyle}"
                        TextTrimming="CharacterEllipsis"
-                               Text="{Binding Schedule.SecondaryTimeZoneLabel}"
-                       Visibility="{Binding HasSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                Text="{Binding Schedule.SecondaryTimeZoneLabel}"
+                       Visibility="{Binding Schedule.HasSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}" />
 
             <TextBlock Grid.Column="4"
                        FontFamily="{StaticResource UiFont}"
@@ -702,9 +731,9 @@
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{Binding Schedule.PrimaryTimeColumnWidth}" />
-                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="{Binding Schedule.SecondaryTimeZoneLeadingGapWidth}" />
                     <ColumnDefinition Width="{Binding Schedule.SecondaryTimeColumnWidth}" />
-                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="{Binding Schedule.SecondaryTimeZoneTrailingGapWidth}" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
@@ -787,9 +816,9 @@
                           Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{Binding Schedule.PrimaryTimeColumnWidth}" />
-                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="{Binding Schedule.SecondaryTimeZoneLeadingGapWidth}" />
                     <ColumnDefinition Width="{Binding Schedule.SecondaryTimeColumnWidth}" />
-                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="{Binding Schedule.SecondaryTimeZoneTrailingGapWidth}" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
@@ -817,7 +846,7 @@
                         <ItemsControl Grid.Column="2"
                               Height="{Binding Schedule.TimelineHeight}"
                               ItemsSource="{Binding Schedule.SecondaryTimelineHours}"
-                                      Visibility="{Binding HasSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}">
+                                      Visibility="{Binding Schedule.HasSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <Canvas />

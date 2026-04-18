@@ -1,15 +1,16 @@
-using FluentAssertions;
-
-using Moq;
-
 using System.Globalization;
 
 using DayScope.Application.Abstractions;
 using DayScope.Application.Calendar;
 using DayScope.Application.Dashboard;
 using DayScope.Application.DaySchedule;
+using DayScope.Themes;
 using DayScope.Threading;
 using DayScope.ViewModels;
+
+using FluentAssertions;
+
+using Moq;
 
 namespace DayScope.Tests;
 
@@ -44,6 +45,27 @@ public sealed class MainWindowViewModelTests
 
         // Act
         var action = () => new MainWindowViewModel(coordinator, null!);
+
+        // Assert
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "The constructor throws when the secondary-time-zone preference store is null.")]
+    [Trait("Category", "Unit")]
+    public void CtorShouldThrowWhenSecondaryTimeZonePreferenceStoreIsNull()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(1, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+
+        // Act
+        var action = () => new MainWindowViewModel(coordinator, inbox, null!);
 
         // Assert
         action.Should().Throw<ArgumentNullException>();
@@ -109,6 +131,34 @@ public sealed class MainWindowViewModelTests
             new Uri("https://calendar.google.com/calendar/r/day/2026/4/16?authuser=user%40example.com"));
         dashboardService.RefreshCalls.Should().Be(1);
         workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(3);
+    }
+
+    [Fact(DisplayName = "Initialization respects the saved secondary-time-zone visibility preference.")]
+    [Trait("Category", "Unit")]
+    public async Task InitializeAsyncShouldRespectSavedSecondaryTimeZoneVisibilityPreference()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(secondaryTimeZoneLabel: "GMT+3"),
+            new EmailInboxSnapshot(0, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var preferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: false);
+        using var viewModel = new MainWindowViewModel(coordinator, inbox, preferenceStore);
+
+        // Act
+        await viewModel.InitializeAsync();
+
+        // Assert
+        viewModel.Schedule.HasConfiguredSecondaryTimeZone.Should().BeTrue();
+        viewModel.Schedule.ShowSecondaryTimeZone.Should().BeFalse();
+        viewModel.Schedule.HasSecondaryTimeZone.Should().BeFalse();
+        viewModel.Schedule.SecondaryTimeColumnWidth.Value.Should().Be(0);
+        viewModel.Schedule.SecondaryTimeZoneLeadingGapWidth.Value.Should().Be(0);
+        preferenceStore.LoadCalls.Should().Be(1);
     }
 
     [Fact(DisplayName = "Refreshing now delegates to the coordinator and updates the displayed state.")]
@@ -321,6 +371,35 @@ public sealed class MainWindowViewModelTests
         dashboardService.GetCurrentDisplayStateCalls.Should().Be(1);
     }
 
+    [Fact(DisplayName = "Toggling the secondary time zone updates the layout state and persists the choice.")]
+    [Trait("Category", "Unit")]
+    public async Task ToggleShowSecondaryTimeZoneShouldUpdateLayoutStateAndPersistChoice()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(secondaryTimeZoneLabel: "GMT+3"),
+            new EmailInboxSnapshot(0, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var preferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+        using var viewModel = new MainWindowViewModel(coordinator, inbox, preferenceStore);
+        await viewModel.InitializeAsync();
+
+        // Act
+        var changed = viewModel.ToggleShowSecondaryTimeZone();
+
+        // Assert
+        changed.Should().BeTrue();
+        viewModel.Schedule.ShowSecondaryTimeZone.Should().BeFalse();
+        viewModel.Schedule.HasSecondaryTimeZone.Should().BeFalse();
+        viewModel.Schedule.SecondaryTimeColumnWidth.Value.Should().Be(0);
+        preferenceStore.SavedValues.Should().ContainSingle()
+            .Which.Should().BeFalse();
+    }
+
     [Fact(DisplayName = "Disposing unsubscribes from coordinator events and disposes the coordinator.")]
     [Trait("Category", "Unit")]
     public async Task DisposeShouldUnsubscribeFromCoordinatorEventsAndDisposeCoordinator()
@@ -391,7 +470,8 @@ public sealed class MainWindowViewModelTests
         int width = 860,
         string statusText = "",
         bool showStatus = false,
-        double? nowLineTop = null)
+        double? nowLineTop = null,
+        string? secondaryTimeZoneLabel = null)
     {
         var day = displayDate ?? new DateOnly(2026, 4, 14);
         return new DayScheduleDisplayState(
@@ -401,7 +481,7 @@ public sealed class MainWindowViewModelTests
             day.Day.ToString(CultureInfo.InvariantCulture),
             "Tuesday, 14 April",
             "UTC",
-            null,
+            secondaryTimeZoneLabel,
             [],
             [],
             [],
@@ -426,6 +506,21 @@ public sealed class MainWindowViewModelTests
             "Discuss roadmap",
             new Uri("https://meet.google.com/abc-defg-hij"),
             []);
+    }
+
+    private sealed class RecordingSecondaryTimeZonePreferenceStore(bool showSecondaryTimeZone) : ISecondaryTimeZonePreferenceStore
+    {
+        public int LoadCalls { get; private set; }
+
+        public List<bool> SavedValues { get; } = [];
+
+        public bool LoadShowSecondaryTimeZone()
+        {
+            LoadCalls++;
+            return showSecondaryTimeZone;
+        }
+
+        public void SaveShowSecondaryTimeZone(bool showSecondaryTimeZone) => SavedValues.Add(showSecondaryTimeZone);
     }
 
     private sealed class RecordingDashboardService(
