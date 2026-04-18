@@ -53,5 +53,10 @@ public enum AppThemeMode
     /// <summary>
     /// Uses a Mediterranean deep-sea palette with underwater highlights.
     /// </summary>
-    DeepSea = 9
+    DeepSea = 9,
+
+    /// <summary>
+    /// Uses a translucent glass palette with a system backdrop behind the window.
+    /// </summary>
+    Glass = 10
 }

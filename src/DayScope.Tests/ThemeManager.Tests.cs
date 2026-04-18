@@ -146,6 +146,29 @@ public sealed class ThemeManagerTests
         resourceApplier.AppliedModes.Should().ContainInOrder(AppThemeMode.Light, AppThemeMode.DeepSea);
     }
 
+    [Fact(DisplayName = "Setting Glass applies the translucent dark theme mode.")]
+    [Trait("Category", "Unit")]
+    public void SetThemeModeShouldApplyGlassTheme()
+    {
+        // Arrange
+        var preferenceStore = new RecordingThemePreferenceStore(AppThemeMode.Os);
+        var themeDetector = new RecordingOsThemeDetector(AppThemeMode.Light);
+        var resourceApplier = new RecordingThemeResourceApplier();
+        using var themeManager = new ThemeManager(preferenceStore, themeDetector, resourceApplier);
+
+        themeManager.Initialize();
+
+        // Act
+        themeManager.SetThemeMode(AppThemeMode.Glass);
+
+        // Assert
+        themeManager.SelectedMode.Should().Be(AppThemeMode.Glass);
+        themeManager.IsDarkTheme.Should().BeTrue();
+        preferenceStore.SavedModes.Should().ContainSingle()
+            .Which.Should().Be(AppThemeMode.Glass);
+        resourceApplier.AppliedModes.Should().ContainInOrder(AppThemeMode.Light, AppThemeMode.Glass);
+    }
+
     private sealed class RecordingThemePreferenceStore(AppThemeMode loadedMode) : IThemePreferenceStore
     {
         public int LoadCalls { get; private set; }

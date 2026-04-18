@@ -19,6 +19,7 @@ internal static class AppThemeOptions
     [
         new(AppThemeMode.Os, "OS"),
         new(AppThemeMode.Light, "Light"),
+        new(AppThemeMode.Glass, "Glass"),
         new(AppThemeMode.Dark, "Dark"),
         new(AppThemeMode.Forest, "Forest"),
         new(AppThemeMode.Autumn, "Autumn"),

@@ -145,6 +145,7 @@ public sealed class ThemeManager : IDisposable
         {
             AppThemeMode.Os => _osThemeDetector.DetectThemeMode(),
             AppThemeMode.Light => AppThemeMode.Light,
+            AppThemeMode.Glass => AppThemeMode.Glass,
             AppThemeMode.Dark => AppThemeMode.Dark,
             AppThemeMode.Forest => AppThemeMode.Forest,
             AppThemeMode.Autumn => AppThemeMode.Autumn,

@@ -12,5 +12,6 @@ public interface IWindowChromeController
     /// </summary>
     /// <param name="window">The target window.</param>
     /// <param name="useDarkChrome">Whether dark title-bar chrome should be enabled.</param>
-    void ApplyTitleBarTheme(Window window, bool useDarkChrome);
+    /// <param name="useGlassBackdrop">Whether the system glass backdrop should be enabled behind the window.</param>
+    void ApplyTitleBarTheme(Window window, bool useDarkChrome, bool useGlassBackdrop);
 }

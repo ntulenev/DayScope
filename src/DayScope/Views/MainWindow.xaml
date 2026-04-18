@@ -9,7 +9,7 @@
         Height="680"
         MinWidth="660"
         MinHeight="500"
-        Background="{DynamicResource WindowBackgroundBrush}"
+        Background="Transparent"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
         SnapsToDevicePixels="True"
@@ -317,6 +317,7 @@
               Margin="-18"
               IsHitTestVisible="False"
               ClipToBounds="True">
+            <Rectangle Fill="{DynamicResource WindowBackgroundBrush}" />
             <Rectangle Fill="{DynamicResource ThemeBackdropOverlayBrush}" />
 
             <Ellipse Width="680"

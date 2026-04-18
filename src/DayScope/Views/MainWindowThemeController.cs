@@ -81,6 +81,9 @@ internal sealed class MainWindowThemeController
             return;
         }
 
-        _windowChromeController.ApplyTitleBarTheme(_window, _themeManager.IsDarkTheme);
+        _windowChromeController.ApplyTitleBarTheme(
+            _window,
+            _themeManager.IsDarkTheme,
+            _themeManager.SelectedMode == AppThemeMode.Glass);
     }
 }

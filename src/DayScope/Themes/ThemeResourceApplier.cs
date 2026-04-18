@@ -33,6 +33,7 @@ public sealed class ApplicationThemeResourceApplier : IThemeResourceApplier
         {
             AppThemeMode.Os => _darkThemeUri,
             AppThemeMode.Light => _lightThemeUri,
+            AppThemeMode.Glass => _glassThemeUri,
             AppThemeMode.Forest => _forestThemeUri,
             AppThemeMode.Autumn => _autumnThemeUri,
             AppThemeMode.DarkPink => _darkPinkThemeUri,
@@ -47,6 +48,7 @@ public sealed class ApplicationThemeResourceApplier : IThemeResourceApplier
 
     private readonly Uri _darkThemeUri = new("Themes/DarkTheme.xaml", UriKind.Relative);
     private readonly Uri _lightThemeUri = new("Themes/LightTheme.xaml", UriKind.Relative);
+    private readonly Uri _glassThemeUri = new("Themes/GlassTheme.xaml", UriKind.Relative);
     private readonly Uri _forestThemeUri = new("Themes/ForestTheme.xaml", UriKind.Relative);
     private readonly Uri _autumnThemeUri = new("Themes/AutumnTheme.xaml", UriKind.Relative);
     private readonly Uri _darkPinkThemeUri = new("Themes/DarkPinkTheme.xaml", UriKind.Relative);
