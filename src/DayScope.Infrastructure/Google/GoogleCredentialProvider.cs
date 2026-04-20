@@ -74,9 +74,9 @@ public sealed class GoogleCredentialProvider : IGoogleCredentialProvider
         {
             return GoogleCredentialLoadResult.AuthorizationRequired();
         }
-        catch (TaskCanceledException)
+        catch (Exception ex) when (GoogleConnectivityFailureDetector.IsConnectivityFailure(ex))
         {
-            return GoogleCredentialLoadResult.AuthorizationRequired();
+            return GoogleCredentialLoadResult.Unavailable();
         }
     }
 

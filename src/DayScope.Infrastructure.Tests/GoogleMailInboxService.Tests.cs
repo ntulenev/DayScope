@@ -254,6 +254,46 @@ public sealed class GoogleMailInboxServiceTests
         snapshot.InboxUri.Should().Be(new Uri("https://mail.google.com/mail/"));
     }
 
+    [Fact(DisplayName = "Inbox loading keeps the last successful snapshot when connectivity is lost.")]
+    [Trait("Category", "Unit")]
+    public async Task GetInboxSnapshotAsyncShouldKeepTheLastSuccessfulSnapshotWhenConnectivityIsLost()
+    {
+        // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
+        var credential = CreateCredential();
+        var workspaceUriBuilder = new RecordingWorkspaceUriBuilder
+        {
+            BuildInboxUriHandler = emailAddress => emailAddress is null
+                ? new Uri("https://mail.google.com/mail/")
+                : new Uri("https://mail.google.com/mail/u/?authuser=user%40example.com#inbox")
+        };
+        var credentialProvider = new Mock<IGoogleCredentialProvider>(MockBehavior.Strict);
+        credentialProvider.Setup(provider => provider.GetCredentialAsync(
+                false,
+                token))
+            .ReturnsAsync(GoogleCredentialLoadResult.Success(credential));
+        var mailInboxGateway = new Mock<IGoogleMailInboxGateway>(MockBehavior.Strict);
+        mailInboxGateway.SetupSequence(gateway => gateway.GetInboxDataAsync(
+                credential,
+                token))
+            .ReturnsAsync(new GoogleMailInboxData(7, "user@example.com"))
+            .ThrowsAsync(new TaskCanceledException());
+        var service = new GoogleMailInboxService(
+            credentialProvider.Object,
+            mailInboxGateway.Object,
+            workspaceUriBuilder);
+
+        // Act
+        var firstSnapshot = await service.GetInboxSnapshotAsync(false, token);
+        var secondSnapshot = await service.GetInboxSnapshotAsync(false, token);
+
+        // Assert
+        firstSnapshot.UnreadCount.Should().Be(7);
+        firstSnapshot.EmailAddress.Should().Be("user@example.com");
+        secondSnapshot.Should().Be(firstSnapshot);
+    }
+
     private static UserCredential CreateCredential()
         => (UserCredential)RuntimeHelpers.GetUninitializedObject(typeof(UserCredential));
 

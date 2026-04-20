@@ -77,6 +77,11 @@ public sealed class GoogleCalendarService : ICalendarService
             return CalendarLoadResult.FromStatus(CalendarLoadStatus.ClientSecretsMissing);
         }
 
+        if (credentialResult.Status == GoogleCredentialLoadStatus.Unavailable)
+        {
+            return CalendarLoadResult.FromStatus(CalendarLoadStatus.Unavailable);
+        }
+
         if (credentialResult.Credential is null)
         {
             return CalendarLoadResult.FromStatus(CalendarLoadStatus.AuthorizationRequired);

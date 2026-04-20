@@ -132,9 +132,9 @@ public sealed class GoogleCredentialProviderTests
         result.Credential.Should().BeSameAs(credential);
     }
 
-    [Fact(DisplayName = "Credential loading returns authorization required when the OAuth flow fails.")]
+    [Fact(DisplayName = "Credential loading returns unavailable when the OAuth flow times out.")]
     [Trait("Category", "Unit")]
-    public async Task GetCredentialAsyncShouldReturnAuthorizationRequiredWhenTheOAuthFlowFails()
+    public async Task GetCredentialAsyncShouldReturnUnavailableWhenTheOAuthFlowTimesOut()
     {
         // Arrange
         using var cancellationTokenSource = new CancellationTokenSource();
@@ -163,7 +163,7 @@ public sealed class GoogleCredentialProviderTests
         var result = await provider.GetCredentialAsync(false, token);
 
         // Assert
-        result.Status.Should().Be(GoogleCredentialLoadStatus.AuthorizationRequired);
+        result.Status.Should().Be(GoogleCredentialLoadStatus.Unavailable);
         result.Credential.Should().BeNull();
     }
 

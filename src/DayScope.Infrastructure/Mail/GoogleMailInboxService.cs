@@ -45,6 +45,11 @@ public sealed class GoogleMailInboxService : IEmailInboxService
         var credentialResult = await _credentialProvider.GetCredentialAsync(
             allowInteractiveAuthentication,
             cancellationToken);
+        if (credentialResult.Status == GoogleCredentialLoadStatus.Unavailable)
+        {
+            return _lastSuccessfulSnapshot ?? CreateSnapshot(null, null);
+        }
+
         if (credentialResult.Status != GoogleCredentialLoadStatus.Success ||
             credentialResult.Credential is null)
         {
@@ -56,17 +61,19 @@ public sealed class GoogleMailInboxService : IEmailInboxService
             var inboxData = await _mailInboxGateway.GetInboxDataAsync(
                 credentialResult.Credential,
                 cancellationToken);
-            return CreateSnapshot(
+            var snapshot = CreateSnapshot(
                 inboxData.UnreadCount,
                 inboxData.EmailAddress);
+            _lastSuccessfulSnapshot = snapshot;
+            return snapshot;
         }
         catch (GoogleApiException)
         {
             return CreateSnapshot(null, null);
         }
-        catch (TaskCanceledException)
+        catch (Exception ex) when (GoogleConnectivityFailureDetector.IsConnectivityFailure(ex))
         {
-            return CreateSnapshot(null, null);
+            return _lastSuccessfulSnapshot ?? CreateSnapshot(null, null);
         }
     }
 
@@ -93,4 +100,5 @@ public sealed class GoogleMailInboxService : IEmailInboxService
     private readonly IGoogleCredentialProvider _credentialProvider;
     private readonly IGoogleMailInboxGateway _mailInboxGateway;
     private readonly IGoogleWorkspaceUriBuilder _workspaceUriBuilder;
+    private EmailInboxSnapshot? _lastSuccessfulSnapshot;
 }

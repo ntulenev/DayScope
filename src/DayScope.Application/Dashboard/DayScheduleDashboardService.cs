@@ -98,11 +98,20 @@ public sealed class DayScheduleDashboardService
 
         try
         {
-            _lastLoadResult = await _calendarService.GetEventsForDateAsync(
+            var loadResult = await _calendarService.GetEventsForDateAsync(
                 _selectedDate,
                 _localTimeZone,
                 interactionMode,
                 cancellationToken);
+            _lastLoadResult = ShouldReuseLastSuccessfulAgenda(loadResult)
+                ? new CalendarLoadResult(_lastSuccessfulLoadResult!.Agenda, CalendarLoadStatus.Unavailable)
+                : loadResult;
+
+            if (loadResult.Status is CalendarLoadStatus.Success or CalendarLoadStatus.NoEvents)
+            {
+                _lastSuccessfulLoadResult = loadResult;
+                _lastSuccessfulDate = _selectedDate;
+            }
 
             return GetCurrentDisplayState(availableScheduleWidth);
         }
@@ -110,6 +119,15 @@ public sealed class DayScheduleDashboardService
         {
             _isRefreshing = false;
         }
+    }
+
+    private bool ShouldReuseLastSuccessfulAgenda(CalendarLoadResult loadResult)
+    {
+        ArgumentNullException.ThrowIfNull(loadResult);
+
+        return loadResult.Status == CalendarLoadStatus.Unavailable &&
+            _lastSuccessfulLoadResult is not null &&
+            _lastSuccessfulDate == _selectedDate;
     }
 
     private readonly IClockService _clockService;
@@ -120,6 +138,8 @@ public sealed class DayScheduleDashboardService
 
     private CalendarLoadResult _lastLoadResult =
         CalendarLoadResult.FromStatus(CalendarLoadStatus.Loading);
+    private CalendarLoadResult? _lastSuccessfulLoadResult;
+    private DateOnly? _lastSuccessfulDate;
     private DateOnly _selectedDate;
     private bool _isRefreshing;
 }

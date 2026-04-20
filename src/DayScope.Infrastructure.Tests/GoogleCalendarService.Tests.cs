@@ -268,6 +268,33 @@ public sealed class GoogleCalendarServiceTests
         result.Status.Should().Be(CalendarLoadStatus.AuthorizationRequired);
     }
 
+    [Fact(DisplayName = "Loading events returns unavailable when the credential provider reports network unavailability.")]
+    [Trait("Category", "Unit")]
+    public async Task GetEventsForDateAsyncShouldReturnUnavailableWhenCredentialProviderReturnsUnavailable()
+    {
+        // Arrange
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
+        var credentialProvider = new Mock<IGoogleCredentialProvider>(MockBehavior.Strict);
+        credentialProvider.SetupGet(provider => provider.IsEnabled)
+            .Returns(true);
+        credentialProvider.Setup(provider => provider.GetCredentialAsync(
+                false,
+                token))
+            .ReturnsAsync(GoogleCredentialLoadResult.Unavailable());
+        var service = CreateService(credentialProvider: credentialProvider.Object);
+
+        // Act
+        var result = await service.GetEventsForDateAsync(
+            new DateOnly(2026, 4, 14),
+            TimeZoneInfo.Utc,
+            CalendarInteractionMode.Background,
+            token);
+
+        // Assert
+        result.Status.Should().Be(CalendarLoadStatus.Unavailable);
+    }
+
     [Fact(DisplayName = "Loading events returns no-events when the mapped agenda is empty after filtering.")]
     [Trait("Category", "Unit")]
     public async Task GetEventsForDateAsyncShouldReturnNoEventsWhenMappedAgendaIsEmpty()

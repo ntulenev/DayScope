@@ -43,4 +43,11 @@ public sealed record GoogleCredentialLoadResult(
     /// <returns>The authorization-required result.</returns>
     public static GoogleCredentialLoadResult AuthorizationRequired() =>
         new(GoogleCredentialLoadStatus.AuthorizationRequired, null);
+
+    /// <summary>
+    /// Creates a result that indicates Google services are temporarily unavailable.
+    /// </summary>
+    /// <returns>The unavailable result.</returns>
+    public static GoogleCredentialLoadResult Unavailable() =>
+        new(GoogleCredentialLoadStatus.Unavailable, null);
 }

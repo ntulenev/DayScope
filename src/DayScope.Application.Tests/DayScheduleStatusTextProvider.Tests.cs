@@ -19,7 +19,7 @@ public sealed class DayScheduleStatusTextProviderTests
     [InlineData(CalendarLoadStatus.AuthorizationRequired, true, false, "Google Calendar sign-in is required to show today's schedule.")]
     [InlineData(CalendarLoadStatus.AuthorizationRequired, false, false, "Google Calendar sign-in is required to show this day's schedule.")]
     [InlineData(CalendarLoadStatus.AccessDenied, true, false, "Calendar not found or access denied.")]
-    [InlineData(CalendarLoadStatus.Unavailable, true, false, "Google Calendar is unavailable right now.")]
+    [InlineData(CalendarLoadStatus.Unavailable, true, false, "No internet connection. DayScope will retry automatically when it's back.")]
     [InlineData(CalendarLoadStatus.NoEvents, true, false, "No events scheduled for today.")]
     [InlineData(CalendarLoadStatus.NoEvents, false, false, "No events scheduled for this day.")]
     [InlineData((CalendarLoadStatus)999, true, false, "")]

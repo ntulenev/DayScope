@@ -52,9 +52,9 @@ public sealed class GoogleCalendarFailureMapperTests
         status.Should().Be(CalendarLoadStatus.AccessDenied);
     }
 
-    [Fact(DisplayName = "Task cancellations map to authorization required.")]
+    [Fact(DisplayName = "Task cancellations map to unavailable.")]
     [Trait("Category", "Unit")]
-    public void MapShouldReturnAuthorizationRequiredWhenExceptionIsTaskCanceledException()
+    public void MapShouldReturnUnavailableWhenExceptionIsTaskCanceledException()
     {
         // Arrange
         var mapper = new GoogleCalendarFailureMapper();
@@ -63,7 +63,7 @@ public sealed class GoogleCalendarFailureMapperTests
         var status = mapper.Map(new TaskCanceledException());
 
         // Assert
-        status.Should().Be(CalendarLoadStatus.AuthorizationRequired);
+        status.Should().Be(CalendarLoadStatus.Unavailable);
     }
 
     [Fact(DisplayName = "Unknown failures map to unavailable.")]

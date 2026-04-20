@@ -39,7 +39,8 @@ internal static class DayScheduleStatusTextProvider
                 ? "Google Calendar sign-in is required to show today's schedule."
                 : "Google Calendar sign-in is required to show this day's schedule.",
             CalendarLoadStatus.AccessDenied => "Calendar not found or access denied.",
-            CalendarLoadStatus.Unavailable => "Google Calendar is unavailable right now.",
+            CalendarLoadStatus.Unavailable =>
+                "No internet connection. DayScope will retry automatically when it's back.",
             CalendarLoadStatus.NoEvents => isToday
                 ? "No events scheduled for today."
                 : "No events scheduled for this day.",

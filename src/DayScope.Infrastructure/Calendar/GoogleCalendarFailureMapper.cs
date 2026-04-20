@@ -2,6 +2,7 @@ using Google;
 using Google.Apis.Auth.OAuth2.Responses;
 
 using DayScope.Application.Calendar;
+using DayScope.Infrastructure.Google;
 
 namespace DayScope.Infrastructure.Calendar;
 
@@ -18,8 +19,9 @@ public sealed class GoogleCalendarFailureMapper : IGoogleCalendarFailureMapper
         return exception switch
         {
             TokenResponseException => CalendarLoadStatus.AuthorizationRequired,
+            _ when GoogleConnectivityFailureDetector.IsConnectivityFailure(exception) =>
+                CalendarLoadStatus.Unavailable,
             GoogleApiException => CalendarLoadStatus.AccessDenied,
-            TaskCanceledException => CalendarLoadStatus.AuthorizationRequired,
             _ => CalendarLoadStatus.Unavailable
         };
     }

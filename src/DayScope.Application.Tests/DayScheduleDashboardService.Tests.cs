@@ -138,6 +138,53 @@ public sealed class DayScheduleDashboardServiceTests
         await firstRefresh;
     }
 
+    [Fact(DisplayName = "Refreshing keeps the last successful agenda visible when the network is temporarily unavailable.")]
+    [Trait("Category", "Unit")]
+    public async Task RefreshCalendarAsyncShouldKeepTheLastSuccessfulAgendaWhenNetworkIsUnavailable()
+    {
+        // Arrange
+        var now = new DateTimeOffset(2026, 4, 14, 9, 0, 0, TimeSpan.Zero);
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
+        var agenda = new CalendarAgenda([CreateEvent(now)]);
+        var clockService = new Mock<IClockService>(MockBehavior.Strict);
+        clockService.SetupGet(service => service.Now)
+            .Returns(now);
+        var calendarService = new Mock<ICalendarService>(MockBehavior.Strict);
+        calendarService.SetupSequence(service => service.GetEventsForDateAsync(
+                new DateOnly(2026, 4, 14),
+                TimeZoneInfo.Utc,
+                CalendarInteractionMode.Background,
+                token))
+            .ReturnsAsync(CalendarLoadResult.Success(agenda))
+            .ReturnsAsync(CalendarLoadResult.FromStatus(CalendarLoadStatus.Unavailable));
+        var localTimeZoneProvider = new Mock<ILocalTimeZoneProvider>(MockBehavior.Strict);
+        localTimeZoneProvider.SetupGet(provider => provider.LocalTimeZone)
+            .Returns(TimeZoneInfo.Utc);
+        var service = CreateService(
+            clockService.Object,
+            calendarService.Object,
+            localTimeZoneProvider.Object);
+
+        // Act
+        var initialState = await service.RefreshCalendarAsync(
+            CalendarInteractionMode.Background,
+            540,
+            token);
+        var offlineState = await service.RefreshCalendarAsync(
+            CalendarInteractionMode.Background,
+            540,
+            token);
+
+        // Assert
+        initialState.TimedEvents.Should().ContainSingle();
+        offlineState.TimedEvents.Should().ContainSingle();
+        offlineState.TimedEvents[0].Title.Should().Be("Standup");
+        offlineState.StatusText.Should().Be(
+            "No internet connection. DayScope will retry automatically when it's back.");
+        offlineState.ShowStatus.Should().BeTrue();
+    }
+
     private static DayScheduleDashboardService CreateService(
         IClockService clockService,
         ICalendarService calendarService,
