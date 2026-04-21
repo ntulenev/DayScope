@@ -1172,6 +1172,37 @@
                             </StackPanel>
 
                             <StackPanel Margin="0,0,0,16"
+                                        Visibility="{Binding EventDetails.HasJoinUrl, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock FontFamily="{StaticResource UiFont}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource SectionLabelBrush}"
+                                           Text="Meeting" />
+                                <StackPanel Margin="0,8,0,0">
+                                    <TextBlock FontFamily="{StaticResource UiFont}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource BodySubtleTextBrush}"
+                                               Text="{Binding EventDetails.SelectedEventDetails.JoinUrl}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Margin="0,12,0,0"
+                                                Orientation="Horizontal">
+                                        <Button Margin="0,0,10,10"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                Style="{StaticResource ModalActionButtonStyle}"
+                                                Click="OnOpenEventLinkClick"
+                                                Content="{Binding EventDetails.JoinLabel}" />
+                                        <Button Margin="0,0,0,10"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                Style="{StaticResource ModalSecondaryActionButtonStyle}"
+                                                Click="OnCopyEventLinkClick"
+                                                Content="Copy link" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Margin="0,0,0,16"
                                         Visibility="{Binding EventDetails.HasParticipants, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock FontFamily="{StaticResource UiFont}"
                                            FontSize="11"
@@ -1221,36 +1252,6 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </StackPanel>
-
-                            <StackPanel Visibility="{Binding EventDetails.HasJoinUrl, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <TextBlock FontFamily="{StaticResource UiFont}"
-                                           FontSize="11"
-                                           FontWeight="Bold"
-                                           Foreground="{DynamicResource SectionLabelBrush}"
-                                           Text="Meeting" />
-                                <StackPanel Margin="0,8,0,0">
-                                    <TextBlock FontFamily="{StaticResource UiFont}"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource BodySubtleTextBrush}"
-                                               Text="{Binding EventDetails.SelectedEventDetails.JoinUrl}"
-                                               TextTrimming="CharacterEllipsis" />
-                                    <StackPanel Margin="0,12,0,0"
-                                                Orientation="Horizontal">
-                                        <Button Margin="0,0,10,10"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Top"
-                                                Style="{StaticResource ModalActionButtonStyle}"
-                                                Click="OnOpenEventLinkClick"
-                                                Content="{Binding EventDetails.JoinLabel}" />
-                                        <Button Margin="0,0,0,10"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Top"
-                                                Style="{StaticResource ModalSecondaryActionButtonStyle}"
-                                                Click="OnCopyEventLinkClick"
-                                                Content="Copy link" />
-                                    </StackPanel>
-                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
