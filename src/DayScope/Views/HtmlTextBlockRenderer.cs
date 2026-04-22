@@ -83,6 +83,37 @@ public static partial class HtmlTextBlockRenderer
         ArgumentNullException.ThrowIfNull(textBlock);
 
         textBlock.Inlines.Clear();
+        Render(textBlock.Inlines, html);
+    }
+
+    /// <summary>
+    /// Renders the provided HTML fragment into a selectable rich text box.
+    /// </summary>
+    /// <param name="richTextBox">The rich text box that receives the rendered document.</param>
+    /// <param name="html">The HTML fragment to render.</param>
+    public static void Render(System.Windows.Controls.RichTextBox richTextBox, string? html)
+    {
+        ArgumentNullException.ThrowIfNull(richTextBox);
+
+        var document = richTextBox.Document;
+        document.Blocks.Clear();
+        document.PagePadding = new Thickness(0);
+        document.Background = System.Windows.Media.Brushes.Transparent;
+        document.FontFamily = richTextBox.FontFamily;
+        document.FontSize = richTextBox.FontSize;
+        document.Foreground = richTextBox.Foreground;
+        document.TextAlignment = TextAlignment.Left;
+
+        var paragraph = new Paragraph
+        {
+            Margin = new Thickness(0)
+        };
+        document.Blocks.Add(paragraph);
+        Render(paragraph.Inlines, html);
+    }
+
+    private static void Render(InlineCollection inlines, string? html)
+    {
         if (string.IsNullOrWhiteSpace(html))
         {
             return;
@@ -95,9 +126,9 @@ public static partial class HtmlTextBlockRenderer
         {
             if (tokenMatch.Groups["anchor"].Success)
             {
-                FlushPendingBreaks(textBlock, ref pendingBreaks, hasVisibleContent);
+                FlushPendingBreaks(inlines, ref pendingBreaks, hasVisibleContent);
                 AppendAnchor(
-                    textBlock,
+                    inlines,
                     tokenMatch.Groups["href"].Value,
                     tokenMatch.Groups["anchorText"].Value,
                     ref hasVisibleContent);
@@ -118,8 +149,8 @@ public static partial class HtmlTextBlockRenderer
 
             if (tokenMatch.Groups["li"].Success)
             {
-                FlushPendingBreaks(textBlock, ref pendingBreaks, hasVisibleContent);
-                textBlock.Inlines.Add(new Run("- "));
+                FlushPendingBreaks(inlines, ref pendingBreaks, hasVisibleContent);
+                inlines.Add(new Run("- "));
                 hasVisibleContent = true;
                 continue;
             }
@@ -135,13 +166,13 @@ public static partial class HtmlTextBlockRenderer
                 continue;
             }
 
-            FlushPendingBreaks(textBlock, ref pendingBreaks, hasVisibleContent);
-            AppendTextWithAutoLinks(textBlock, decodedText, ref hasVisibleContent);
+            FlushPendingBreaks(inlines, ref pendingBreaks, hasVisibleContent);
+            AppendTextWithAutoLinks(inlines, decodedText, ref hasVisibleContent);
         }
     }
 
     private static void FlushPendingBreaks(
-        TextBlock textBlock,
+        InlineCollection inlines,
         ref int pendingBreaks,
         bool hasVisibleContent)
     {
@@ -153,14 +184,14 @@ public static partial class HtmlTextBlockRenderer
 
         for (var index = 0; index < pendingBreaks; index++)
         {
-            textBlock.Inlines.Add(new LineBreak());
+            inlines.Add(new LineBreak());
         }
 
         pendingBreaks = 0;
     }
 
     private static void AppendAnchor(
-        TextBlock textBlock,
+        InlineCollection inlines,
         string href,
         string anchorText,
         ref bool hasVisibleContent)
@@ -174,18 +205,18 @@ public static partial class HtmlTextBlockRenderer
 
         if (TryCreateUri(href, out var uri))
         {
-            textBlock.Inlines.Add(CreateHyperlink(uri, displayText));
+            inlines.Add(CreateHyperlink(uri, displayText));
         }
         else
         {
-            textBlock.Inlines.Add(new Run(displayText));
+            inlines.Add(new Run(displayText));
         }
 
         hasVisibleContent = true;
     }
 
     private static void AppendTextWithAutoLinks(
-        TextBlock textBlock,
+        InlineCollection inlines,
         string text,
         ref bool hasVisibleContent)
     {
@@ -194,7 +225,7 @@ public static partial class HtmlTextBlockRenderer
         {
             if (urlMatch.Index > cursor)
             {
-                textBlock.Inlines.Add(new Run(text[cursor..urlMatch.Index]));
+                inlines.Add(new Run(text[cursor..urlMatch.Index]));
                 hasVisibleContent = true;
             }
 
@@ -203,16 +234,16 @@ public static partial class HtmlTextBlockRenderer
             var trailingSuffix = rawUrl[url.Length..];
             if (TryCreateUri(url, out var uri))
             {
-                textBlock.Inlines.Add(CreateHyperlink(uri, url));
+                inlines.Add(CreateHyperlink(uri, url));
             }
             else
             {
-                textBlock.Inlines.Add(new Run(rawUrl));
+                inlines.Add(new Run(rawUrl));
             }
 
             if (trailingSuffix.Length > 0)
             {
-                textBlock.Inlines.Add(new Run(trailingSuffix));
+                inlines.Add(new Run(trailingSuffix));
             }
 
             cursor = urlMatch.Index + urlMatch.Length;
@@ -221,7 +252,7 @@ public static partial class HtmlTextBlockRenderer
 
         if (cursor < text.Length)
         {
-            textBlock.Inlines.Add(new Run(text[cursor..]));
+            inlines.Add(new Run(text[cursor..]));
             hasVisibleContent = true;
         }
     }

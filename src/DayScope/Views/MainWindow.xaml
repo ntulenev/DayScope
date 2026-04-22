@@ -1163,11 +1163,25 @@
                                         BorderBrush="{DynamicResource ModalInsetBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="10">
-                                    <TextBlock FontFamily="{StaticResource UiFont}"
-                                               FontSize="13"
-                                               Foreground="{DynamicResource ModalInsetTextBrush}"
-                                               view:HtmlTextBlock.Html="{Binding EventDetails.SelectedEventDetails.Description}"
-                                               TextWrapping="Wrap" />
+                                    <RichTextBox FontFamily="{StaticResource UiFont}"
+                                                 FontSize="13"
+                                                 Foreground="{DynamicResource ModalInsetTextBrush}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0"
+                                                 IsReadOnly="True"
+                                                 IsDocumentEnabled="True"
+                                                 IsReadOnlyCaretVisible="False"
+                                                 VerticalScrollBarVisibility="Disabled"
+                                                 HorizontalScrollBarVisibility="Disabled"
+                                                 view:HtmlTextBlock.Html="{Binding EventDetails.SelectedEventDetails.Description}">
+                                        <RichTextBox.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Command="ApplicationCommands.Copy"
+                                                          Header="Copy" />
+                                            </ContextMenu>
+                                        </RichTextBox.ContextMenu>
+                                    </RichTextBox>
                                 </Border>
                             </StackPanel>
 

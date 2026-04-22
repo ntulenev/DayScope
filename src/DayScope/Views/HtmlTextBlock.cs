@@ -4,7 +4,7 @@ using System.Windows.Controls;
 namespace DayScope.Views;
 
 /// <summary>
-/// Renders a constrained subset of HTML content into a WPF <see cref="TextBlock"/>.
+/// Renders a constrained subset of HTML content into supported WPF text controls.
 /// </summary>
 public static class HtmlTextBlock
 {
@@ -46,11 +46,16 @@ public static class HtmlTextBlock
     /// <param name="args">The property change arguments.</param>
     private static void OnHtmlChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
     {
-        if (dependencyObject is not TextBlock textBlock)
+        switch (dependencyObject)
         {
-            return;
+            case TextBlock textBlock:
+                HtmlTextBlockRenderer.Render(textBlock, args.NewValue as string);
+                break;
+            case System.Windows.Controls.RichTextBox richTextBox:
+                HtmlTextBlockRenderer.Render(richTextBox, args.NewValue as string);
+                break;
+            default:
+                break;
         }
-
-        HtmlTextBlockRenderer.Render(textBlock, args.NewValue as string);
     }
 }
