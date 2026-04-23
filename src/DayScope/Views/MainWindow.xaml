@@ -566,6 +566,15 @@
                                 </Button>
 
                                 <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnCopyScheduleFromHeaderMenuClick">
+                                    <TextBlock FontFamily="{StaticResource UiFont}"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               Text="Copy Schedule" />
+                                </Button>
+
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
                                         Click="OnToggleSecondaryTimeZoneClick"
                                         Visibility="{Binding Schedule.HasConfiguredSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <Grid>

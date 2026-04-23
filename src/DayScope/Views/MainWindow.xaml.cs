@@ -102,6 +102,13 @@ public partial class MainWindow : Window
     public Task RefreshNowAsync() => _viewModel.RefreshNowAsync();
 
     /// <summary>
+    /// Copies the active day's schedule summary to the clipboard.
+    /// </summary>
+    /// <returns><see langword="true"/> when the text was copied; otherwise <see langword="false"/>.</returns>
+    public bool CopyScheduleToClipboard() =>
+        _clipboardService.TrySetText(ScheduleClipboardTextBuilder.Build(_viewModel.Schedule));
+
+    /// <summary>
     /// Allows the window to close instead of minimizing to the tray.
     /// </summary>
     public void CloseFromTray() => _shellController.CloseFromTray(this);
@@ -221,6 +228,17 @@ public partial class MainWindow : Window
     {
         CloseHeaderMenu();
         await RefreshNowAsync();
+    }
+
+    /// <summary>
+    /// Copies the active day's schedule summary from the in-window settings menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnCopyScheduleFromHeaderMenuClick(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        _ = CopyScheduleToClipboard();
     }
 
     /// <summary>

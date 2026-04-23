@@ -71,6 +71,7 @@ public sealed class TrayIconController : IDisposable
         var (menu, themeMenuController) = TrayMenuBuilder.Build(
             () => _mainWindow.Dispatcher.Invoke(ShowMainWindow),
             () => _mainWindow.Dispatcher.Invoke(BeginRefreshFromTray),
+            () => _mainWindow.Dispatcher.Invoke(CopyScheduleFromTray),
             themeMode => _mainWindow.Dispatcher.Invoke(() => SetThemeMode(themeMode)),
             () => _mainWindow.Dispatcher.Invoke(ExitFromTray));
         _contextMenu = menu;
@@ -95,6 +96,11 @@ public sealed class TrayIconController : IDisposable
     private void BeginRefreshFromTray()
     {
         _ = RefreshFromTrayAsync();
+    }
+
+    private void CopyScheduleFromTray()
+    {
+        _ = _mainWindow.CopyScheduleToClipboard();
     }
 
     private async Task RefreshFromTrayAsync()
