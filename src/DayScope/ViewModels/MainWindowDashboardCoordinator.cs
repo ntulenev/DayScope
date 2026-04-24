@@ -31,7 +31,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
         _clockTimer = timerFactory.Create(TimeSpan.FromMinutes(1));
         _calendarTimer = timerFactory.Create(_dashboardService.CalendarRefreshInterval);
 
-        _clockTimer.Tick += OnClockTimerTick;
+        _clockTimer.Tick += OnClockTimerTickAsync;
         _calendarTimer.Tick += OnCalendarTimerTickAsync;
     }
 
@@ -56,6 +56,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
             return;
         }
 
+        _lastObservedCurrentDate = _dashboardService.CurrentLocalDate;
         await RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
         _clockTimer.StartTimer();
@@ -111,7 +112,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// </summary>
     public void Dispose()
     {
-        _clockTimer.Tick -= OnClockTimerTick;
+        _clockTimer.Tick -= OnClockTimerTickAsync;
         _calendarTimer.Tick -= OnCalendarTimerTickAsync;
         _clockTimer.StopTimer();
         _calendarTimer.StopTimer();
@@ -120,8 +121,25 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     private bool ShouldRunBackgroundRefresh =>
         _dashboardService.IsCalendarEnabled || _emailInboxService.IsEnabled;
 
-    private void OnClockTimerTick(object? sender, EventArgs e)
+    private async void OnClockTimerTickAsync(object? sender, EventArgs e)
     {
+        var currentLocalDate = _dashboardService.CurrentLocalDate;
+        if (_lastObservedCurrentDate.HasValue && currentLocalDate != _lastObservedCurrentDate.Value)
+        {
+            _lastObservedCurrentDate = currentLocalDate;
+            _dashboardService.TrySelectCurrentDate();
+
+            if (_isRefreshing)
+            {
+                _pendingCurrentDateRefresh = true;
+                PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
+                return;
+            }
+
+            await RefreshDashboardAsync(CalendarInteractionMode.Background);
+            return;
+        }
+
         PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
     }
 
@@ -143,14 +161,26 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
 
         try
         {
-            PublishDisplayState(await _dashboardService.RefreshCalendarAsync(
-                interactionMode,
-                _availableScheduleWidth,
-                CancellationToken.None));
+            while (true)
+            {
+                _pendingCurrentDateRefresh = false;
 
-            PublishInboxSnapshot(await _emailInboxService.GetInboxSnapshotAsync(
-                interactionMode == CalendarInteractionMode.Interactive,
-                CancellationToken.None));
+                PublishDisplayState(await _dashboardService.RefreshCalendarAsync(
+                    interactionMode,
+                    _availableScheduleWidth,
+                    CancellationToken.None));
+
+                PublishInboxSnapshot(await _emailInboxService.GetInboxSnapshotAsync(
+                    interactionMode == CalendarInteractionMode.Interactive,
+                    CancellationToken.None));
+
+                if (!_pendingCurrentDateRefresh)
+                {
+                    break;
+                }
+
+                interactionMode = CalendarInteractionMode.Background;
+            }
         }
         finally
         {
@@ -183,4 +213,6 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     private double _availableScheduleWidth = 860;
     private bool _isInitialized;
     private bool _isRefreshing;
+    private bool _pendingCurrentDateRefresh;
+    private DateOnly? _lastObservedCurrentDate;
 }

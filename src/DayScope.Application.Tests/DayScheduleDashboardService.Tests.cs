@@ -88,6 +88,36 @@ public sealed class DayScheduleDashboardServiceTests
         state.ShowStatus.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Selecting the current date switches the dashboard to the new local system day and resets it to loading.")]
+    [Trait("Category", "Unit")]
+    public void TrySelectCurrentDateShouldSwitchToTheCurrentLocalSystemDay()
+    {
+        // Arrange
+        var now = new DateTimeOffset(2026, 4, 14, 23, 59, 0, TimeSpan.Zero);
+        var clockService = new Mock<IClockService>(MockBehavior.Strict);
+        clockService.SetupGet(service => service.Now)
+            .Returns(() => now);
+        var calendarService = new Mock<ICalendarService>(MockBehavior.Strict);
+        var localTimeZoneProvider = new Mock<ILocalTimeZoneProvider>(MockBehavior.Strict);
+        localTimeZoneProvider.SetupGet(provider => provider.LocalTimeZone)
+            .Returns(TimeZoneInfo.Utc);
+        var service = CreateService(
+            clockService.Object,
+            calendarService.Object,
+            localTimeZoneProvider.Object);
+        now = new DateTimeOffset(2026, 4, 15, 0, 1, 0, TimeSpan.Zero);
+
+        // Act
+        var changed = service.TrySelectCurrentDate();
+        var state = service.GetCurrentDisplayState();
+
+        // Assert
+        changed.Should().BeTrue();
+        state.DisplayDate.Should().Be(new DateOnly(2026, 4, 15));
+        state.StatusText.Should().Be("Loading today's schedule...");
+        state.ShowStatus.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Refreshing while another refresh is already running returns the current display state.")]
     [Trait("Category", "Unit")]
     public async Task RefreshCalendarAsyncShouldReturnCurrentDisplayStateWhenRefreshIsAlreadyRunning()
@@ -183,6 +213,49 @@ public sealed class DayScheduleDashboardServiceTests
         offlineState.StatusText.Should().Be(
             "No internet connection. DayScope will retry automatically when it's back.");
         offlineState.ShowStatus.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Refreshing discards stale results when the selected date changes before the request finishes.")]
+    [Trait("Category", "Unit")]
+    public async Task RefreshCalendarAsyncShouldDiscardStaleResultsWhenSelectedDateChanges()
+    {
+        // Arrange
+        var now = new DateTimeOffset(2026, 4, 14, 23, 59, 0, TimeSpan.Zero);
+        var refreshCompletionSource = new TaskCompletionSource<CalendarLoadResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var clockService = new Mock<IClockService>(MockBehavior.Strict);
+        clockService.SetupGet(service => service.Now)
+            .Returns(() => now);
+        var calendarService = new Mock<ICalendarService>(MockBehavior.Strict);
+        calendarService.Setup(service => service.GetEventsForDateAsync(
+                new DateOnly(2026, 4, 14),
+                TimeZoneInfo.Utc,
+                CalendarInteractionMode.Background,
+                It.IsAny<CancellationToken>()))
+            .Returns(refreshCompletionSource.Task);
+        var localTimeZoneProvider = new Mock<ILocalTimeZoneProvider>(MockBehavior.Strict);
+        localTimeZoneProvider.SetupGet(provider => provider.LocalTimeZone)
+            .Returns(TimeZoneInfo.Utc);
+        var service = CreateService(
+            clockService.Object,
+            calendarService.Object,
+            localTimeZoneProvider.Object);
+        var refreshTask = service.RefreshCalendarAsync(
+            CalendarInteractionMode.Background,
+            540,
+            CancellationToken.None);
+        now = new DateTimeOffset(2026, 4, 15, 0, 1, 0, TimeSpan.Zero);
+
+        // Act
+        service.TrySelectCurrentDate();
+        refreshCompletionSource.SetResult(CalendarLoadResult.Success(new CalendarAgenda([CreateEvent(now)])));
+        var state = await refreshTask;
+
+        // Assert
+        state.DisplayDate.Should().Be(new DateOnly(2026, 4, 15));
+        state.StatusText.Should().Be("Loading today's schedule...");
+        state.ShowStatus.Should().BeTrue();
+        state.TimedEvents.Should().BeEmpty();
     }
 
     private static DayScheduleDashboardService CreateService(

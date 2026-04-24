@@ -39,6 +39,8 @@ public sealed class MainWindowDashboardCoordinatorTests
             .Returns(TimeSpan.FromMinutes(5));
         dashboardService.SetupGet(service => service.IsCalendarEnabled)
             .Returns(true);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
         dashboardService.Setup(service => service.RefreshCalendarAsync(
                 CalendarInteractionMode.Interactive,
                 860,
@@ -99,6 +101,8 @@ public sealed class MainWindowDashboardCoordinatorTests
             .Returns(TimeSpan.FromMinutes(5));
         dashboardService.SetupGet(service => service.IsCalendarEnabled)
             .Returns(true);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
         dashboardService.Setup(service => service.RefreshCalendarAsync(
                 CalendarInteractionMode.Interactive,
                 860,
@@ -149,6 +153,8 @@ public sealed class MainWindowDashboardCoordinatorTests
             .Returns(TimeSpan.FromMinutes(5));
         dashboardService.SetupGet(service => service.IsCalendarEnabled)
             .Returns(false);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
         dashboardService.Setup(service => service.ShiftSelectedDate(1))
             .Callback(() => shiftSelectedDateCalls++);
         dashboardService.Setup(service => service.GetCurrentDisplayState(860))
@@ -215,6 +221,8 @@ public sealed class MainWindowDashboardCoordinatorTests
             .Returns(TimeSpan.FromMinutes(5));
         dashboardService.SetupGet(service => service.IsCalendarEnabled)
             .Returns(false);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
         dashboardService.Setup(service => service.GetCurrentDisplayState(860))
             .Callback(() => getCurrentDisplayStateCalls++)
             .Returns(loadingState);
@@ -251,6 +259,129 @@ public sealed class MainWindowDashboardCoordinatorTests
         timerFactory.CreateCalls.Should().Be(2);
     }
 
+    [Fact(DisplayName = "Clock ticks switch the dashboard to the current day only after the system date rolls over.")]
+    [Trait("Category", "Unit")]
+    public async Task ClockTickShouldSelectCurrentDateAndRefreshInBackgroundAfterDateRollover()
+    {
+        // Arrange
+        var refreshedState = CreateDisplayState(displayDate: new DateOnly(2026, 4, 15));
+        var inboxSnapshot = CreateInboxSnapshot(unreadCount: 1);
+        var publishedStates = new List<DayScheduleDisplayState>();
+        var clockTimer = new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1));
+        var calendarTimer = new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5));
+        var timerFactory = CreateTimerFactory(clockTimer, calendarTimer);
+        var refreshCalls = 0;
+        var inboxCalls = 0;
+        var tickCompletion = new TaskCompletionSource<object?>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var currentLocalDate = new DateOnly(2026, 4, 14);
+        var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
+        dashboardService.SetupGet(service => service.CalendarRefreshInterval)
+            .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.IsCalendarEnabled)
+            .Returns(true);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(() => currentLocalDate);
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Interactive,
+                860,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateDisplayState());
+        dashboardService.Setup(service => service.TrySelectCurrentDate())
+            .Returns(true);
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Background,
+                860,
+                It.IsAny<CancellationToken>()))
+            .Callback(() => refreshCalls++)
+            .Returns(async () =>
+            {
+                await Task.Yield();
+                return refreshedState;
+            });
+        var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inboxSnapshot);
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(false, It.IsAny<CancellationToken>()))
+            .Callback(() =>
+            {
+                inboxCalls++;
+                tickCompletion.SetResult(null);
+            })
+            .ReturnsAsync(inboxSnapshot);
+        using var coordinator = new MainWindowDashboardCoordinator(
+            dashboardService.Object,
+            emailInboxService.Object,
+            timerFactory);
+        coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
+
+        await coordinator.InitializeAsync();
+        publishedStates.Clear();
+
+        // Act
+        currentLocalDate = new DateOnly(2026, 4, 15);
+        clockTimer.RaiseTick();
+        await tickCompletion.Task;
+
+        // Assert
+        refreshCalls.Should().Be(1);
+        inboxCalls.Should().Be(1);
+        publishedStates.Should().ContainSingle()
+            .Which.Should().BeSameAs(refreshedState);
+    }
+
+    [Fact(DisplayName = "Clock ticks do not steal focus when the system date has not changed.")]
+    [Trait("Category", "Unit")]
+    public async Task ClockTickShouldNotSelectCurrentDateWhenSystemDateDidNotChange()
+    {
+        // Arrange
+        var browsingState = CreateDisplayState(displayDate: new DateOnly(2026, 4, 20));
+        var publishedStates = new List<DayScheduleDisplayState>();
+        var clockTimer = new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1));
+        var calendarTimer = new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5));
+        var timerFactory = CreateTimerFactory(clockTimer, calendarTimer);
+        var getCurrentDisplayStateCalls = 0;
+        var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
+        dashboardService.SetupGet(service => service.CalendarRefreshInterval)
+            .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.IsCalendarEnabled)
+            .Returns(true);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Interactive,
+                860,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateDisplayState());
+        dashboardService.Setup(service => service.GetCurrentDisplayState(860))
+            .Callback(() => getCurrentDisplayStateCalls++)
+            .Returns(browsingState);
+        var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateInboxSnapshot(unreadCount: 1));
+        using var coordinator = new MainWindowDashboardCoordinator(
+            dashboardService.Object,
+            emailInboxService.Object,
+            timerFactory);
+        coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
+
+        await coordinator.InitializeAsync();
+        publishedStates.Clear();
+
+        // Act
+        clockTimer.RaiseTick();
+
+        // Assert
+        getCurrentDisplayStateCalls.Should().Be(1);
+        publishedStates.Should().ContainSingle()
+            .Which.Should().BeSameAs(browsingState);
+        dashboardService.Verify(service => service.TrySelectCurrentDate(), Times.Never);
+        dashboardService.Verify(service => service.RefreshCalendarAsync(
+            CalendarInteractionMode.Background,
+            It.IsAny<double?>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact(DisplayName = "Schedule-width updates normalize the measured width and publish only when the width changes.")]
     [Trait("Category", "Unit")]
     public void UpdateAvailableScheduleWidthShouldNormalizeWidthAndPublishOnlyWhenTheWidthChanges()
@@ -265,6 +396,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
         dashboardService.SetupGet(service => service.CalendarRefreshInterval)
             .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
         dashboardService.Setup(service => service.GetCurrentDisplayState(500))
             .Callback(() => getCurrentDisplayStateCalls++)
             .Returns(displayState);
@@ -300,6 +433,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
         dashboardService.SetupGet(service => service.CalendarRefreshInterval)
             .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(new DateOnly(2026, 4, 14));
         dashboardService.Setup(service => service.GetCurrentDisplayState(420))
             .Callback(() => getCurrentDisplayStateCalls++)
             .Returns(displayState);

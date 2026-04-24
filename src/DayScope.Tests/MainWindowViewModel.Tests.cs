@@ -535,6 +535,8 @@ public sealed class MainWindowViewModelTests
 
         public TimeSpan CalendarRefreshInterval => TimeSpan.FromMinutes(5);
 
+        public DateOnly CurrentLocalDate => initialDisplayState.DisplayDate;
+
         public int RefreshCalls { get; private set; }
 
         public int ShiftSelectedDateCalls { get; private set; }
@@ -550,6 +552,8 @@ public sealed class MainWindowViewModelTests
         }
 
         public void ShiftSelectedDate(int dayOffset) => ShiftSelectedDateCalls++;
+
+        public bool TrySelectCurrentDate() => false;
 
         public Task<DayScheduleDisplayState> RefreshCalendarAsync(
             CalendarInteractionMode interactionMode,

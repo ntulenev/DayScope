@@ -12,6 +12,8 @@ public interface IDayScheduleDashboardService
 
     TimeSpan CalendarRefreshInterval { get; }
 
+    DateOnly CurrentLocalDate { get; }
+
     /// <summary>
     /// Builds the current display state from the last loaded agenda.
     /// </summary>
@@ -24,6 +26,12 @@ public interface IDayScheduleDashboardService
     /// </summary>
     /// <param name="dayOffset">The number of days to move backward or forward.</param>
     void ShiftSelectedDate(int dayOffset);
+
+    /// <summary>
+    /// Switches the selected date to the current local system day when it has changed.
+    /// </summary>
+    /// <returns><see langword="true"/> when the selected date changed; otherwise <see langword="false"/>.</returns>
+    bool TrySelectCurrentDate();
 
     /// <summary>
     /// Refreshes calendar data and returns the updated display state.

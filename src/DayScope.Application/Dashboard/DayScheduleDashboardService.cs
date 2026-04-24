@@ -39,14 +39,15 @@ public sealed class DayScheduleDashboardService
         _localTimeZone = localTimeZoneProvider.LocalTimeZone;
         _scheduleSettings = scheduleOptions.Value;
         _googleCalendarSettings = googleCalendarOptions.Value;
-        _selectedDate = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTime(_clockService.Now, _localTimeZone).DateTime);
+        _selectedDate = GetCurrentLocalDate();
     }
 
     public bool IsCalendarEnabled => _calendarService.IsEnabled;
 
     public TimeSpan CalendarRefreshInterval =>
         TimeSpan.FromMinutes(_googleCalendarSettings.RefreshMinutes);
+
+    public DateOnly CurrentLocalDate => GetCurrentLocalDate();
 
     /// <summary>
     /// Builds the current display state from the last loaded agenda.
@@ -78,6 +79,23 @@ public sealed class DayScheduleDashboardService
     }
 
     /// <summary>
+    /// Switches the selected date to the current local system day when it has changed.
+    /// </summary>
+    /// <returns><see langword="true"/> when the selected date changed; otherwise <see langword="false"/>.</returns>
+    public bool TrySelectCurrentDate()
+    {
+        var currentLocalDate = GetCurrentLocalDate();
+        if (_selectedDate == currentLocalDate)
+        {
+            return false;
+        }
+
+        _selectedDate = currentLocalDate;
+        _lastLoadResult = CalendarLoadResult.FromStatus(CalendarLoadStatus.Loading);
+        return true;
+    }
+
+    /// <summary>
     /// Refreshes the selected day from the calendar service and returns the resulting display state.
     /// </summary>
     /// <param name="interactionMode">Whether interactive authentication is allowed.</param>
@@ -98,11 +116,17 @@ public sealed class DayScheduleDashboardService
 
         try
         {
+            var requestedDate = _selectedDate;
             var loadResult = await _calendarService.GetEventsForDateAsync(
-                _selectedDate,
+                requestedDate,
                 _localTimeZone,
                 interactionMode,
                 cancellationToken);
+            if (requestedDate != _selectedDate)
+            {
+                return GetCurrentDisplayState(availableScheduleWidth);
+            }
+
             _lastLoadResult = ShouldReuseLastSuccessfulAgenda(loadResult)
                 ? new CalendarLoadResult(_lastSuccessfulLoadResult!.Agenda, CalendarLoadStatus.Unavailable)
                 : loadResult;
@@ -129,6 +153,9 @@ public sealed class DayScheduleDashboardService
             _lastSuccessfulLoadResult is not null &&
             _lastSuccessfulDate == _selectedDate;
     }
+
+    private DateOnly GetCurrentLocalDate() =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_clockService.Now, _localTimeZone).DateTime);
 
     private readonly IClockService _clockService;
     private readonly ICalendarService _calendarService;
