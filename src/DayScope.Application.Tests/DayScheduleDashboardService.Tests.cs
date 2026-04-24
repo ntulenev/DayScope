@@ -221,6 +221,8 @@ public sealed class DayScheduleDashboardServiceTests
     {
         // Arrange
         var now = new DateTimeOffset(2026, 4, 14, 23, 59, 0, TimeSpan.Zero);
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
         var refreshCompletionSource = new TaskCompletionSource<CalendarLoadResult>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var clockService = new Mock<IClockService>(MockBehavior.Strict);
@@ -243,7 +245,7 @@ public sealed class DayScheduleDashboardServiceTests
         var refreshTask = service.RefreshCalendarAsync(
             CalendarInteractionMode.Background,
             540,
-            CancellationToken.None);
+            token);
         now = new DateTimeOffset(2026, 4, 15, 0, 1, 0, TimeSpan.Zero);
 
         // Act

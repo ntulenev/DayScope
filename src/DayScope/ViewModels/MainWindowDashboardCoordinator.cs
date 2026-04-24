@@ -4,6 +4,8 @@ using DayScope.Application.Dashboard;
 using DayScope.Application.DaySchedule;
 using DayScope.Threading;
 
+using Microsoft.Extensions.Hosting;
+
 namespace DayScope.ViewModels;
 
 /// <summary>
@@ -17,17 +19,21 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// <param name="dashboardService">The service that builds schedule display state.</param>
     /// <param name="emailInboxService">The service that loads unread email data.</param>
     /// <param name="timerFactory">The factory used to create UI timers.</param>
+    /// <param name="applicationLifetime">The application lifetime used to cancel background refreshes during shutdown.</param>
     public MainWindowDashboardCoordinator(
         IDayScheduleDashboardService dashboardService,
         IEmailInboxService emailInboxService,
-        IUiDispatcherTimerFactory timerFactory)
+        IUiDispatcherTimerFactory timerFactory,
+        IHostApplicationLifetime applicationLifetime)
     {
         ArgumentNullException.ThrowIfNull(dashboardService);
         ArgumentNullException.ThrowIfNull(emailInboxService);
         ArgumentNullException.ThrowIfNull(timerFactory);
+        ArgumentNullException.ThrowIfNull(applicationLifetime);
 
         _dashboardService = dashboardService;
         _emailInboxService = emailInboxService;
+        _applicationLifetime = applicationLifetime;
         _clockTimer = timerFactory.Create(TimeSpan.FromMinutes(1));
         _calendarTimer = timerFactory.Create(_dashboardService.CalendarRefreshInterval);
 
@@ -168,11 +174,11 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
                 PublishDisplayState(await _dashboardService.RefreshCalendarAsync(
                     interactionMode,
                     _availableScheduleWidth,
-                    CancellationToken.None));
+                    _applicationLifetime.ApplicationStopping));
 
                 PublishInboxSnapshot(await _emailInboxService.GetInboxSnapshotAsync(
                     interactionMode == CalendarInteractionMode.Interactive,
-                    CancellationToken.None));
+                    _applicationLifetime.ApplicationStopping));
 
                 if (!_pendingCurrentDateRefresh)
                 {
@@ -208,6 +214,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
 
     private readonly IDayScheduleDashboardService _dashboardService;
     private readonly IEmailInboxService _emailInboxService;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly IUiDispatcherTimer _clockTimer;
     private readonly IUiDispatcherTimer _calendarTimer;
     private double _availableScheduleWidth = 860;

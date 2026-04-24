@@ -10,6 +10,8 @@ using DayScope.ViewModels;
 
 using FluentAssertions;
 
+using Microsoft.Extensions.Hosting;
+
 using Moq;
 
 namespace DayScope.Tests;
@@ -462,8 +464,19 @@ public sealed class MainWindowViewModelTests
         return new MainWindowDashboardCoordinator(
             dashboardService,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
     }
+
+    private static Mock<IHostApplicationLifetime> CreateApplicationLifetime()
+    {
+        var applicationLifetime = new Mock<IHostApplicationLifetime>(MockBehavior.Strict);
+        applicationLifetime.SetupGet(lifetime => lifetime.ApplicationStopping)
+            .Returns(SharedApplicationStoppingSource.Token);
+        return applicationLifetime;
+    }
+
+    private static readonly CancellationTokenSource SharedApplicationStoppingSource = new();
 
     private static DayScheduleDisplayState CreateDisplayState(
         DateOnly? displayDate = null,

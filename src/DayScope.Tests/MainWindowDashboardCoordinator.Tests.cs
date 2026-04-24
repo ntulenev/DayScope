@@ -9,6 +9,8 @@ using DayScope.Application.DaySchedule;
 using DayScope.Threading;
 using DayScope.ViewModels;
 
+using Microsoft.Extensions.Hosting;
+
 namespace DayScope.Tests;
 
 public sealed class MainWindowDashboardCoordinatorTests
@@ -25,6 +27,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         var createTimerCalls = 0;
         var refreshCalls = 0;
         var inboxCalls = 0;
+        using var applicationStoppingSource = new CancellationTokenSource();
+        var applicationStoppingToken = applicationStoppingSource.Token;
         CancellationToken capturedRefreshToken = default;
         CancellationToken capturedInboxToken = default;
         var timerFactory = new Mock<IUiDispatcherTimerFactory>(MockBehavior.Strict);
@@ -62,7 +66,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory.Object);
+            timerFactory.Object,
+            CreateApplicationLifetime(applicationStoppingToken).Object);
         DayScheduleDisplayState? publishedDisplayState = null;
         EmailInboxSnapshot? publishedSnapshot = null;
         coordinator.DisplayStateChanged += (_, args) => publishedDisplayState = args.DisplayState;
@@ -79,8 +84,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         calendarTimer.StartCalls.Should().Be(1);
         refreshCalls.Should().Be(1);
         inboxCalls.Should().Be(1);
-        capturedRefreshToken.CanBeCanceled.Should().BeFalse();
-        capturedInboxToken.CanBeCanceled.Should().BeFalse();
+        capturedRefreshToken.Should().Be(applicationStoppingToken);
+        capturedInboxToken.Should().Be(applicationStoppingToken);
         createTimerCalls.Should().Be(2);
     }
 
@@ -116,7 +121,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
 
         // Act
         await coordinator.InitializeAsync();
@@ -143,6 +149,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         var getCurrentDisplayStateCalls = 0;
         var refreshCalls = 0;
         var inboxCalls = 0;
+        using var applicationStoppingSource = new CancellationTokenSource();
+        var applicationStoppingToken = applicationStoppingSource.Token;
         CancellationToken capturedRefreshToken = default;
         CancellationToken capturedInboxToken = default;
         var timerFactory = CreateTimerFactory(
@@ -183,7 +191,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime(applicationStoppingToken).Object);
         coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
 
         // Act
@@ -195,8 +204,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         getCurrentDisplayStateCalls.Should().Be(1);
         refreshCalls.Should().Be(1);
         inboxCalls.Should().Be(1);
-        capturedRefreshToken.CanBeCanceled.Should().BeFalse();
-        capturedInboxToken.CanBeCanceled.Should().BeFalse();
+        capturedRefreshToken.Should().Be(applicationStoppingToken);
+        capturedInboxToken.Should().Be(applicationStoppingToken);
         timerFactory.CreateCalls.Should().Be(2);
     }
 
@@ -241,7 +250,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
         coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
 
         // Act
@@ -312,7 +322,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
         coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
 
         await coordinator.InitializeAsync();
@@ -362,7 +373,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
         coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
 
         await coordinator.InitializeAsync();
@@ -405,7 +417,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
         coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
 
         // Act
@@ -442,7 +455,8 @@ public sealed class MainWindowDashboardCoordinatorTests
         using var coordinator = new MainWindowDashboardCoordinator(
             dashboardService.Object,
             emailInboxService.Object,
-            timerFactory);
+            timerFactory,
+            CreateApplicationLifetime().Object);
         coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
 
         // Act
@@ -462,6 +476,17 @@ public sealed class MainWindowDashboardCoordinatorTests
         var timerFactory = new RecordingUiDispatcherTimerFactory(clockTimer, calendarTimer);
         return timerFactory;
     }
+
+    private static Mock<IHostApplicationLifetime> CreateApplicationLifetime(
+        CancellationToken? applicationStoppingToken = null)
+    {
+        var applicationLifetime = new Mock<IHostApplicationLifetime>(MockBehavior.Strict);
+        applicationLifetime.SetupGet(lifetime => lifetime.ApplicationStopping)
+            .Returns(applicationStoppingToken ?? SharedApplicationStoppingSource.Token);
+        return applicationLifetime;
+    }
+
+    private static readonly CancellationTokenSource SharedApplicationStoppingSource = new();
 
     private static DayScheduleDisplayState CreateDisplayState(
         DateOnly? displayDate = null,
