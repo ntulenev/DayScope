@@ -53,6 +53,8 @@ For live Google integration:
 - Google Calendar API enabled
 - Gmail API enabled
 
+Detailed step-by-step setup is available in [GOOGLE_CLOUD_SETUP.md](./GOOGLE_CLOUD_SETUP.md).
+
 ## Configuration
 
 The main settings file is:
