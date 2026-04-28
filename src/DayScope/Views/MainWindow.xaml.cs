@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
 using DayScope.Application.DaySchedule;
 using DayScope.Domain.Configuration;
+using DayScope.Infrastructure.Configuration;
 using DayScope.Platform;
 using DayScope.Themes;
 using DayScope.ViewModels;
@@ -34,29 +36,41 @@ public partial class MainWindow : Window
     /// <param name="themeManager">The theme manager used to update window chrome.</param>
     /// <param name="windowOptions">The configured window sizing options.</param>
     /// <param name="uriLauncher">The service used to open external links.</param>
+    /// <param name="folderLauncher">The service used to open local folders.</param>
     /// <param name="clipboardService">The service used to copy text to the clipboard.</param>
     /// <param name="windowChromeController">The controller used to update native window chrome.</param>
+    /// <param name="googleCalendarOptions">The configured Google integration options.</param>
+    /// <param name="pathResolver">The service used to resolve configured local paths.</param>
     public MainWindow(
         MainWindowViewModel viewModel,
         ThemeManager themeManager,
         IOptions<WindowSettings> windowOptions,
         IUriLauncher uriLauncher,
+        IFolderLauncher folderLauncher,
         IClipboardService clipboardService,
-        IWindowChromeController windowChromeController)
+        IWindowChromeController windowChromeController,
+        IOptions<GoogleCalendarSettings> googleCalendarOptions,
+        IPathResolver pathResolver)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(themeManager);
         ArgumentNullException.ThrowIfNull(windowOptions);
         ArgumentNullException.ThrowIfNull(uriLauncher);
+        ArgumentNullException.ThrowIfNull(folderLauncher);
         ArgumentNullException.ThrowIfNull(clipboardService);
         ArgumentNullException.ThrowIfNull(windowChromeController);
+        ArgumentNullException.ThrowIfNull(googleCalendarOptions);
+        ArgumentNullException.ThrowIfNull(pathResolver);
 
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
         _uriLauncher = uriLauncher;
+        _folderLauncher = folderLauncher;
         _clipboardService = clipboardService;
         _themeManager = themeManager;
+        _googleCalendarSettings = googleCalendarOptions.Value;
+        _pathResolver = pathResolver;
         _shellController = new MainWindowShellController();
         _themeController = new MainWindowThemeController(themeManager, windowChromeController);
 
@@ -197,7 +211,21 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnToggleThemeMenuClick(object sender, RoutedEventArgs e)
     {
+        CollapseOpenFolderMenu();
         ThemeMenuItemsPanel.Visibility = ThemeMenuItemsPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Shows or hides the local-folder section inside the header menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnToggleOpenFolderMenuClick(object sender, RoutedEventArgs e)
+    {
+        CollapseThemeMenu();
+        OpenFolderMenuItemsPanel.Visibility = OpenFolderMenuItemsPanel.Visibility == Visibility.Visible
             ? Visibility.Collapsed
             : Visibility.Visible;
     }
@@ -239,6 +267,28 @@ public partial class MainWindow : Window
     {
         CloseHeaderMenu();
         _ = CopyScheduleToClipboard();
+    }
+
+    /// <summary>
+    /// Opens the folder containing the running application.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnOpenApplicationFolderClick(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        _folderLauncher.Open(AppContext.BaseDirectory);
+    }
+
+    /// <summary>
+    /// Opens the folder containing the configured Google credentials file.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnOpenCredentialsFolderClick(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        _folderLauncher.Open(GetCredentialsFolderPath());
     }
 
     /// <summary>
@@ -417,9 +467,18 @@ public partial class MainWindow : Window
     {
         HeaderMenuPopup.IsOpen = false;
         CollapseThemeMenu();
+        CollapseOpenFolderMenu();
     }
 
     private void CollapseThemeMenu() => ThemeMenuItemsPanel.Visibility = Visibility.Collapsed;
+
+    private void CollapseOpenFolderMenu() => OpenFolderMenuItemsPanel.Visibility = Visibility.Collapsed;
+
+    private string GetCredentialsFolderPath()
+    {
+        var credentialsPath = _pathResolver.ResolvePath(_googleCalendarSettings.ClientSecretsPath);
+        return Path.GetDirectoryName(credentialsPath) ?? AppContext.BaseDirectory;
+    }
 
     private static string BuildEventDetailsClipboardText(
         EventDetailsDisplayState eventDetails,
@@ -446,6 +505,9 @@ public partial class MainWindow : Window
 
     private readonly MainWindowViewModel _viewModel;
     private readonly IUriLauncher _uriLauncher;
+    private readonly IFolderLauncher _folderLauncher;
     private readonly IClipboardService _clipboardService;
     private readonly ThemeManager _themeManager;
+    private readonly GoogleCalendarSettings _googleCalendarSettings;
+    private readonly IPathResolver _pathResolver;
 }

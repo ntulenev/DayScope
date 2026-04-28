@@ -575,6 +575,53 @@
                                 </Button>
 
                                 <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        Click="OnToggleOpenFolderMenuClick">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock FontFamily="{StaticResource UiFont}"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   Text="Open Folder" />
+                                        <TextBlock Grid.Column="1"
+                                                   FontFamily="{StaticResource UiFont}"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Text="&gt;" />
+                                    </Grid>
+                                </Button>
+
+                                <Border x:Name="OpenFolderMenuItemsPanel"
+                                        Margin="12,0,0,4"
+                                        Padding="8,4,0,4"
+                                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                        BorderThickness="1,0,0,0"
+                                        Visibility="Collapsed">
+                                    <StackPanel>
+                                        <Button Style="{StaticResource HeaderMenuPopupSubButtonStyle}"
+                                                Click="OnOpenApplicationFolderClick">
+                                            <TextBlock FontFamily="{StaticResource UiFont}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="Application folder" />
+                                        </Button>
+
+                                        <Button Style="{StaticResource HeaderMenuPopupSubButtonStyle}"
+                                                Click="OnOpenCredentialsFolderClick">
+                                            <TextBlock FontFamily="{StaticResource UiFont}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Text="Credentials folder" />
+                                        </Button>
+                                    </StackPanel>
+                                </Border>
+
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
                                         Click="OnToggleSecondaryTimeZoneClick"
                                         Visibility="{Binding Schedule.HasConfiguredSecondaryTimeZone, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <Grid>
