@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ThemeManager>();
         services.AddSingleton<TrayIconController>();
         services.AddSingleton<IUriLauncher, ShellUriLauncher>();
+        services.AddSingleton<IFolderLauncher, ShellFolderLauncher>();
         services.AddSingleton<IClipboardService, WpfClipboardService>();
         services.AddSingleton<IWindowChromeController, WindowChromeController>();
         services.AddSingleton<IUiDispatcherTimerFactory, DispatcherTimerFactory>();

@@ -46,6 +46,10 @@ public sealed class PresentationServiceCollectionExtensionsTests
             descriptor.ImplementationType == typeof(ShellUriLauncher) &&
             descriptor.Lifetime == ServiceLifetime.Singleton);
         services.Should().Contain(descriptor =>
+            descriptor.ServiceType == typeof(IFolderLauncher) &&
+            descriptor.ImplementationType == typeof(ShellFolderLauncher) &&
+            descriptor.Lifetime == ServiceLifetime.Singleton);
+        services.Should().Contain(descriptor =>
             descriptor.ServiceType == typeof(IClipboardService) &&
             descriptor.ImplementationType == typeof(WpfClipboardService) &&
             descriptor.Lifetime == ServiceLifetime.Singleton);
