@@ -341,6 +341,68 @@ public sealed class MainWindowDashboardCoordinatorTests
             .Which.Should().BeSameAs(refreshedState);
     }
 
+    [Fact(DisplayName = "Resume checks switch the dashboard to the current day when the system date changed while idle.")]
+    [Trait("Category", "Unit")]
+    public async Task RefreshCurrentDateIfChangedAsyncShouldSelectCurrentDateAndRefreshAfterDateRollover()
+    {
+        // Arrange
+        var refreshedState = CreateDisplayState(displayDate: new DateOnly(2026, 4, 15));
+        var inboxSnapshot = CreateInboxSnapshot(unreadCount: 1);
+        var publishedStates = new List<DayScheduleDisplayState>();
+        var timerFactory = CreateTimerFactory(
+            new FakeUiDispatcherTimer(TimeSpan.FromMinutes(1)),
+            new FakeUiDispatcherTimer(TimeSpan.FromMinutes(5)));
+        var refreshCalls = 0;
+        var inboxCalls = 0;
+        var currentLocalDate = new DateOnly(2026, 4, 14);
+        var dashboardService = new Mock<IDayScheduleDashboardService>(MockBehavior.Strict);
+        dashboardService.SetupGet(service => service.CalendarRefreshInterval)
+            .Returns(TimeSpan.FromMinutes(5));
+        dashboardService.SetupGet(service => service.IsCalendarEnabled)
+            .Returns(true);
+        dashboardService.SetupGet(service => service.CurrentLocalDate)
+            .Returns(() => currentLocalDate);
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Interactive,
+                860,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateDisplayState());
+        dashboardService.Setup(service => service.TrySelectCurrentDate())
+            .Returns(true);
+        dashboardService.Setup(service => service.RefreshCalendarAsync(
+                CalendarInteractionMode.Background,
+                860,
+                It.IsAny<CancellationToken>()))
+            .Callback(() => refreshCalls++)
+            .ReturnsAsync(refreshedState);
+        var emailInboxService = new Mock<IEmailInboxService>(MockBehavior.Strict);
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inboxSnapshot);
+        emailInboxService.Setup(email => email.GetInboxSnapshotAsync(false, It.IsAny<CancellationToken>()))
+            .Callback(() => inboxCalls++)
+            .ReturnsAsync(inboxSnapshot);
+        using var coordinator = new MainWindowDashboardCoordinator(
+            dashboardService.Object,
+            emailInboxService.Object,
+            timerFactory,
+            CreateApplicationLifetime().Object);
+        coordinator.DisplayStateChanged += (_, args) => publishedStates.Add(args.DisplayState);
+
+        await coordinator.InitializeAsync();
+        publishedStates.Clear();
+
+        // Act
+        currentLocalDate = new DateOnly(2026, 4, 15);
+        var changed = await coordinator.RefreshCurrentDateIfChangedAsync();
+
+        // Assert
+        changed.Should().BeTrue();
+        refreshCalls.Should().Be(1);
+        inboxCalls.Should().Be(1);
+        publishedStates.Should().ContainSingle()
+            .Which.Should().BeSameAs(refreshedState);
+    }
+
     [Fact(DisplayName = "Clock ticks do not steal focus when the system date has not changed.")]
     [Trait("Category", "Unit")]
     public async Task ClockTickShouldNotSelectCurrentDateWhenSystemDateDidNotChange()
