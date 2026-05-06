@@ -5,6 +5,8 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
+using Microsoft.Win32;
+
 using DayScope.Application.DaySchedule;
 using DayScope.Domain.Configuration;
 using DayScope.Infrastructure.Configuration;
@@ -85,8 +87,11 @@ public partial class MainWindow : Window
         _themeController.Attach(this);
         _themeManager.ThemeChanged += OnThemeChanged;
         SizeChanged += OnSizeChanged;
+        Activated += OnActivatedAsync;
         Closing += OnClosing;
         Closed += OnClosed;
+        SystemEvents.PowerModeChanged += OnPowerModeChangedAsync;
+        SystemEvents.SessionSwitch += OnSessionSwitchAsync;
     }
 
     /// <summary>
@@ -423,6 +428,13 @@ public partial class MainWindow : Window
     private void OnSizeChanged(object sender, SizeChangedEventArgs e) => UpdateScheduleWidth();
 
     /// <summary>
+    /// Refreshes date-sensitive state when the window becomes active after being idle.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The event arguments.</param>
+    private async void OnActivatedAsync(object? sender, EventArgs e) => await RefreshCurrentDateAfterIdleAsync();
+
+    /// <summary>
     /// Applies post-show layout updates after the tray restores the main window.
     /// </summary>
     private void OnShownFromTray()
@@ -430,6 +442,7 @@ public partial class MainWindow : Window
         UpdateLayout();
         UpdateScheduleWidth();
         ScrollScheduleToNowLine();
+        _ = RefreshCurrentDateAfterIdleAsync();
     }
 
     /// <summary>
@@ -439,9 +452,42 @@ public partial class MainWindow : Window
     /// <param name="e">The event arguments.</param>
     private void OnClosed(object? sender, EventArgs e)
     {
+        SystemEvents.PowerModeChanged -= OnPowerModeChangedAsync;
+        SystemEvents.SessionSwitch -= OnSessionSwitchAsync;
+        Activated -= OnActivatedAsync;
         _themeManager.ThemeChanged -= OnThemeChanged;
         _themeController.Detach(this);
         _viewModel.Dispose();
+    }
+
+    private async void OnPowerModeChangedAsync(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume)
+        {
+            await RefreshCurrentDateAfterIdleAsync();
+        }
+    }
+
+    private async void OnSessionSwitchAsync(object sender, SessionSwitchEventArgs e)
+    {
+        if (e.Reason == SessionSwitchReason.SessionUnlock)
+        {
+            await RefreshCurrentDateAfterIdleAsync();
+        }
+    }
+
+    private async Task RefreshCurrentDateAfterIdleAsync()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            await await Dispatcher.InvokeAsync(RefreshCurrentDateAfterIdleAsync);
+            return;
+        }
+
+        if (await _viewModel.RefreshCurrentDateIfChangedAsync())
+        {
+            ScrollScheduleToNowLine();
+        }
     }
 
     private void OnThemeChanged(object? sender, EventArgs e)

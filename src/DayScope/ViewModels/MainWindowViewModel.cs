@@ -84,6 +84,12 @@ public sealed class MainWindowViewModel : IDisposable
     public Task RefreshNowAsync() => _dashboardCoordinator.RefreshNowAsync();
 
     /// <summary>
+    /// Refreshes the dashboard when the local day changed while the app was idle.
+    /// </summary>
+    /// <returns>A task that returns <see langword="true"/> when the selected date changed.</returns>
+    public Task<bool> RefreshCurrentDateIfChangedAsync() => _dashboardCoordinator.RefreshCurrentDateIfChangedAsync();
+
+    /// <summary>
     /// Moves the selected schedule date by the provided number of days.
     /// </summary>
     /// <param name="dayOffset">The number of days to move backward or forward.</param>

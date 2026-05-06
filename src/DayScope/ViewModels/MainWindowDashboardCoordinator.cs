@@ -81,6 +81,12 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     public Task RefreshNowAsync() => RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
     /// <summary>
+    /// Checks whether the local day changed while the app was idle and refreshes the selected day when needed.
+    /// </summary>
+    /// <returns>A task that returns <see langword="true"/> when the selected date changed.</returns>
+    public Task<bool> RefreshCurrentDateIfChangedAsync() => RefreshCurrentDateIfChangedAsync(publishUnchangedState: false);
+
+    /// <summary>
     /// Moves the selected schedule date by the provided number of days.
     /// </summary>
     /// <param name="dayOffset">The number of days to move backward or forward.</param>
@@ -129,6 +135,11 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
 
     private async void OnClockTimerTickAsync(object? sender, EventArgs e)
     {
+        await RefreshCurrentDateIfChangedAsync(publishUnchangedState: true);
+    }
+
+    private async Task<bool> RefreshCurrentDateIfChangedAsync(bool publishUnchangedState)
+    {
         var currentLocalDate = _dashboardService.CurrentLocalDate;
         if (_lastObservedCurrentDate.HasValue && currentLocalDate != _lastObservedCurrentDate.Value)
         {
@@ -139,14 +150,19 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
             {
                 _pendingCurrentDateRefresh = true;
                 PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
-                return;
+                return true;
             }
 
             await RefreshDashboardAsync(CalendarInteractionMode.Background);
-            return;
+            return true;
         }
 
-        PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
+        if (publishUnchangedState)
+        {
+            PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
+        }
+
+        return false;
     }
 
     private async void OnCalendarTimerTickAsync(object? sender, EventArgs e)
