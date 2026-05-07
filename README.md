@@ -14,7 +14,7 @@ The app is designed to stay out of the way: it starts as a small desktop compani
 - All-day event strip
 - Event status styling for confirmed, tentative, declined, cancelled, and awaiting response
 - Day navigation with previous / next controls
-- Theme switching from the tray menu with OS, Light, Dark, Forest, Autumn, Dark Pink, and Matrix options
+- Theme switching from the tray menu with OS, Light, Glass, Dark, Forest, Autumn, Dark Pink, Matrix, Code, Cyberpunk, Deep sea, and Alpine dawn options
 - Click the day header to open Google Calendar for the selected day
 - Click the unread email badge to open Gmail for the authenticated account
 - Event details modal with description, participants, and meeting links
@@ -140,7 +140,7 @@ Dark Pink theme main window
 - Closing the window hides it to the system tray instead of exiting.
 - Double-click the tray icon or use `Open` to show the window again.
 - Use `Refresh now` in the tray menu to trigger a manual refresh.
-- Use `Theme` in the tray menu to switch between OS, Light, Dark, Forest, Autumn, Dark Pink, and Matrix.
+- Use `Theme` in the tray menu to switch between OS, Light, Glass, Dark, Forest, Autumn, Dark Pink, Matrix, Code, Cyberpunk, Deep sea, and Alpine dawn.
 - Use `Exit` in the tray menu to fully close the application.
 
 ## Purpose
