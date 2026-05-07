@@ -41,6 +41,7 @@ public sealed class ApplicationThemeResourceApplier : IThemeResourceApplier
             AppThemeMode.Code => _codeThemeUri,
             AppThemeMode.Cyberpunk => _cyberpunkThemeUri,
             AppThemeMode.DeepSea => _deepSeaThemeUri,
+            AppThemeMode.AlpineDawn => _alpineDawnThemeUri,
             AppThemeMode.Dark => _darkThemeUri,
             _ => _darkThemeUri
         };
@@ -56,5 +57,6 @@ public sealed class ApplicationThemeResourceApplier : IThemeResourceApplier
     private readonly Uri _codeThemeUri = new("Themes/CodeTheme.xaml", UriKind.Relative);
     private readonly Uri _cyberpunkThemeUri = new("Themes/CyberpunkTheme.xaml", UriKind.Relative);
     private readonly Uri _deepSeaThemeUri = new("Themes/DeepSeaTheme.xaml", UriKind.Relative);
+    private readonly Uri _alpineDawnThemeUri = new("Themes/AlpineDawnTheme.xaml", UriKind.Relative);
     private System.Windows.ResourceDictionary? _themeDictionary;
 }

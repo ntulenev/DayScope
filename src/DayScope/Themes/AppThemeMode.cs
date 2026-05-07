@@ -58,5 +58,10 @@ public enum AppThemeMode
     /// <summary>
     /// Uses a translucent glass palette with a system backdrop behind the window.
     /// </summary>
-    Glass = 10
+    Glass = 10,
+
+    /// <summary>
+    /// Uses a misty alpine dawn palette with rose and indigo highlights.
+    /// </summary>
+    AlpineDawn = 11
 }

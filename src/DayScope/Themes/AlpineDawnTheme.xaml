@@ -1,0 +1,109 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <LinearGradientBrush x:Key="WindowBackgroundBrush"
+                         StartPoint="0,0"
+                         EndPoint="1,1">
+        <GradientStop Color="#3A221F32" Offset="0" />
+        <GradientStop Color="#423A496F" Offset="0.34" />
+        <GradientStop Color="#19274464" Offset="0.68" />
+        <GradientStop Color="#09172C" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="ScrollBarBackgroundBrush" Color="#111A2C" />
+    <SolidColorBrush x:Key="SubtleBackgroundBrush" Color="#162036" />
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#9A8FAFCE" />
+    <SolidColorBrush x:Key="HourLabelBrush" Color="#AEB7D5E8" />
+
+    <SolidColorBrush x:Key="EventAcceptedBackgroundBrush" Color="#333C5F86" />
+    <SolidColorBrush x:Key="EventAcceptedAccentBrush" Color="#90B6DAFF" />
+    <SolidColorBrush x:Key="EventAwaitingBackgroundBrush" Color="#5E4A3740" />
+    <SolidColorBrush x:Key="EventAwaitingAccentBrush" Color="#E2B98D" />
+    <SolidColorBrush x:Key="EventTentativeBackgroundBrush" Color="#3E50638C" />
+    <SolidColorBrush x:Key="EventTentativeAccentBrush" Color="#A9C2F2" />
+    <SolidColorBrush x:Key="EventDeclinedBackgroundBrush" Color="#2A34475F" />
+    <SolidColorBrush x:Key="EventDeclinedAccentBrush" Color="#8291AA" />
+    <SolidColorBrush x:Key="EventCancelledBackgroundBrush" Color="#5536414F" />
+    <SolidColorBrush x:Key="EventCancelledAccentBrush" Color="#DCA0A3" />
+    <SolidColorBrush x:Key="EventTitleBrush" Color="#F5F8FF" />
+    <SolidColorBrush x:Key="EventAwaitingTitleBrush" Color="#FFF1DB" />
+    <SolidColorBrush x:Key="EventDeclinedTitleBrush" Color="#D4DDEB" />
+    <SolidColorBrush x:Key="EventCancelledTitleBrush" Color="#F3D9DD" />
+    <SolidColorBrush x:Key="EventMetaBrush" Color="#C5D2EA" />
+    <SolidColorBrush x:Key="EventAwaitingMetaBrush" Color="#EFD1AA" />
+    <SolidColorBrush x:Key="EventDeclinedMetaBrush" Color="#A9B5C8" />
+    <SolidColorBrush x:Key="EventCancelledMetaBrush" Color="#DFC0C7" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F6F8FF" />
+    <SolidColorBrush x:Key="PrimaryActionBrush" Color="#D7A4B8" />
+    <SolidColorBrush x:Key="SecondaryActionTextBrush" Color="#E6ECFA" />
+    <SolidColorBrush x:Key="SecondaryActionBackgroundBrush" Color="#26304B68" />
+    <SolidColorBrush x:Key="SecondaryActionBorderBrush" Color="#6F7E9EBE" />
+    <SolidColorBrush x:Key="HeaderSurfaceBrush" Color="#24203349" />
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#4C526F8C" />
+    <SolidColorBrush x:Key="HeaderHoverBorderBrush" Color="#8DA2C0DE" />
+    <SolidColorBrush x:Key="HeaderHoverBackgroundBrush" Color="#302A3D57" />
+    <SolidColorBrush x:Key="HeaderPressedBorderBrush" Color="#A9B9D2EA" />
+    <SolidColorBrush x:Key="HeaderPressedBackgroundBrush" Color="#3A334B68" />
+    <SolidColorBrush x:Key="UnreadBadgeBrush" Color="#8F746F98" />
+    <SolidColorBrush x:Key="UnreadBadgeUnknownBrush" Color="#898DA1B5" />
+    <SolidColorBrush x:Key="HeaderTextBrush" Color="#EDF2FF" />
+    <SolidColorBrush x:Key="AccentDangerBrush" Color="#F08D83" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B2BDD3" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#D0D8E9" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#25131B2D" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#64536C8A" />
+    <SolidColorBrush x:Key="SecondarySurfaceBrush" Color="#23131B2C" />
+    <SolidColorBrush x:Key="SecondarySurfaceBorderBrush" Color="#5C526984" />
+    <SolidColorBrush x:Key="EmptyStateTextBrush" Color="#92A0B8" />
+    <SolidColorBrush x:Key="ScheduleSurfaceBackgroundBrush" Color="#24101727" />
+    <SolidColorBrush x:Key="ScheduleSurfaceBorderBrush" Color="#5E506985" />
+    <SolidColorBrush x:Key="NowLineBrush" Color="#F4B6A6" />
+    <SolidColorBrush x:Key="StatusTextBrush" Color="#BEC8DC" />
+    <SolidColorBrush x:Key="OverlayBrush" Color="#8A07101E" />
+    <SolidColorBrush x:Key="ModalBackgroundBrush" Color="#E0162137" />
+    <SolidColorBrush x:Key="ModalBorderBrush" Color="#7F697896" />
+    <SolidColorBrush x:Key="ModalSecondaryTextBrush" Color="#B6C1D6" />
+    <SolidColorBrush x:Key="ModalInsetBackgroundBrush" Color="#6E0E1728" />
+    <SolidColorBrush x:Key="ModalInsetBorderBrush" Color="#76556883" />
+    <SolidColorBrush x:Key="ModalInsetTextBrush" Color="#E9EEF9" />
+    <SolidColorBrush x:Key="SectionLabelBrush" Color="#A3AFC6" />
+    <SolidColorBrush x:Key="BodyTextBrush" Color="#F0F4FF" />
+    <SolidColorBrush x:Key="BodySubtleTextBrush" Color="#BCC8DB" />
+    <SolidColorBrush x:Key="ParticipantStatusBrush" Color="#B9C5DA" />
+    <SolidColorBrush x:Key="CloseButtonBackgroundBrush" Color="#3B22324A" />
+    <SolidColorBrush x:Key="CloseButtonBorderBrush" Color="#79677E98" />
+    <SolidColorBrush x:Key="CloseButtonTextBrush" Color="#EAF0FB" />
+
+    <LinearGradientBrush x:Key="ThemeBackdropOverlayBrush"
+                         StartPoint="0,0"
+                         EndPoint="1,1">
+        <GradientStop Color="#24E5A7A5" Offset="0" />
+        <GradientStop Color="#1A8996C8" Offset="0.42" />
+        <GradientStop Color="#5A07152A" Offset="1" />
+    </LinearGradientBrush>
+    <RadialGradientBrush x:Key="ThemeSurfaceGlowBrush"
+                         Center="0.16,0.12"
+                         GradientOrigin="0.16,0.12"
+                         RadiusX="0.58"
+                         RadiusY="0.44">
+        <GradientStop Color="#70F1C6BE" Offset="0" />
+        <GradientStop Color="#2AD5B8D8" Offset="0.48" />
+        <GradientStop Color="#00FFFFFF" Offset="1" />
+    </RadialGradientBrush>
+    <LinearGradientBrush x:Key="ThemeLightRayBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#36F6E7E3" Offset="0" />
+        <GradientStop Color="#149BAED9" Offset="0.54" />
+        <GradientStop Color="#00FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ThemeSeabedBrush"
+                         StartPoint="0.5,0"
+                         EndPoint="0.5,1">
+        <GradientStop Color="#5E25314E" Offset="0" />
+        <GradientStop Color="#C4071428" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="ThemeSeaweedBrush" Color="#485F78A4" />
+    <SolidColorBrush x:Key="ThemeSeaweedSecondaryBrush" Color="#36506B95" />
+    <SolidColorBrush x:Key="ThemeCoralBrush" Color="#9FDDA3B6" />
+    <SolidColorBrush x:Key="ThemeCoralSecondaryBrush" Color="#7DBE90A8" />
+</ResourceDictionary>

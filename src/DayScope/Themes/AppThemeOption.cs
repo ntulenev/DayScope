@@ -27,6 +27,7 @@ internal static class AppThemeOptions
         new(AppThemeMode.Matrix, "Matrix"),
         new(AppThemeMode.Code, "Code"),
         new(AppThemeMode.Cyberpunk, "Cyberpunk"),
-        new(AppThemeMode.DeepSea, "Deep sea")
+        new(AppThemeMode.DeepSea, "Deep sea"),
+        new(AppThemeMode.AlpineDawn, "Alpine dawn")
     ];
 }

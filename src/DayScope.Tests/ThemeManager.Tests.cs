@@ -169,6 +169,29 @@ public sealed class ThemeManagerTests
         resourceApplier.AppliedModes.Should().ContainInOrder(AppThemeMode.Light, AppThemeMode.Glass);
     }
 
+    [Fact(DisplayName = "Setting Alpine dawn applies the dedicated dark theme mode.")]
+    [Trait("Category", "Unit")]
+    public void SetThemeModeShouldApplyAlpineDawnTheme()
+    {
+        // Arrange
+        var preferenceStore = new RecordingThemePreferenceStore(AppThemeMode.Os);
+        var themeDetector = new RecordingOsThemeDetector(AppThemeMode.Light);
+        var resourceApplier = new RecordingThemeResourceApplier();
+        using var themeManager = new ThemeManager(preferenceStore, themeDetector, resourceApplier);
+
+        themeManager.Initialize();
+
+        // Act
+        themeManager.SetThemeMode(AppThemeMode.AlpineDawn);
+
+        // Assert
+        themeManager.SelectedMode.Should().Be(AppThemeMode.AlpineDawn);
+        themeManager.IsDarkTheme.Should().BeTrue();
+        preferenceStore.SavedModes.Should().ContainSingle()
+            .Which.Should().Be(AppThemeMode.AlpineDawn);
+        resourceApplier.AppliedModes.Should().ContainInOrder(AppThemeMode.Light, AppThemeMode.AlpineDawn);
+    }
+
     private sealed class RecordingThemePreferenceStore(AppThemeMode loadedMode) : IThemePreferenceStore
     {
         public int LoadCalls { get; private set; }

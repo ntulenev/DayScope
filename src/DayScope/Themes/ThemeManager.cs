@@ -154,6 +154,7 @@ public sealed class ThemeManager : IDisposable
             AppThemeMode.Code => AppThemeMode.Code,
             AppThemeMode.Cyberpunk => AppThemeMode.Cyberpunk,
             AppThemeMode.DeepSea => AppThemeMode.DeepSea,
+            AppThemeMode.AlpineDawn => AppThemeMode.AlpineDawn,
             _ => _osThemeDetector.DetectThemeMode()
         };
     }
