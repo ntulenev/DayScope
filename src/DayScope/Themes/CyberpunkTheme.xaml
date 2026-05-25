@@ -43,6 +43,7 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9A90D1" />
     <SolidColorBrush x:Key="TextMutedBrush" Color="#D4CBFF" />
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#201635" />
+    <SolidColorBrush x:Key="HeaderMenuBackgroundBrush" Color="#201635" />
     <SolidColorBrush x:Key="CardBorderBrush" Color="#33274F" />
     <SolidColorBrush x:Key="SecondarySurfaceBrush" Color="#1B132F" />
     <SolidColorBrush x:Key="SecondarySurfaceBorderBrush" Color="#30254D" />

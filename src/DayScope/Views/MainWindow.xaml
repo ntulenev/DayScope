@@ -553,7 +553,7 @@
                            Closed="OnHeaderMenuClosed">
                         <Border MinWidth="244"
                                 Padding="8"
-                                Background="{DynamicResource CardBackgroundBrush}"
+                                Background="{DynamicResource HeaderMenuBackgroundBrush}"
                                 BorderBrush="{DynamicResource CardBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="18">
