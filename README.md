@@ -84,6 +84,8 @@ Theme preference is stored at:
 
 - `%LocalAppData%\DayScope\preferences.json`
 
+The same file stores UI preferences such as secondary time zone visibility and the calendar zoom scale.
+
 When `DemoMode.Enabled` is `true`, the app uses synthetic calendar and inbox data and does not require Google setup.
 
 ## Google Setup
@@ -133,6 +135,7 @@ Dark Pink theme main window
 - Click `Unread Emails` to open Gmail inbox for the authenticated account.
 - Click any event card to open event details.
 - Use event detail actions to open or copy meeting links.
+- Use `Zoom` in the header menu to scale only the calendar body from 85% to 115%; `-` and `+` change it by 1%, the slider allows fine tuning, and clicking the percentage resets it to 100%.
 
 ## Tray Behavior
 
