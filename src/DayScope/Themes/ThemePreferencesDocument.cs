@@ -14,4 +14,9 @@ internal sealed class ThemePreferencesDocument
     /// Gets the persisted secondary-time-zone visibility preference.
     /// </summary>
     public bool? ShowSecondaryTimeZone { get; init; }
+
+    /// <summary>
+    /// Gets the persisted calendar body zoom scale.
+    /// </summary>
+    public double? CalendarZoomScale { get; init; }
 }

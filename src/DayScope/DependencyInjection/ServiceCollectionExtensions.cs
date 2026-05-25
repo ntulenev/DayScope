@@ -26,6 +26,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IThemePreferenceStore, ThemePreferenceStore>();
         services.AddSingleton<ISecondaryTimeZonePreferenceStore>(serviceProvider =>
             (ThemePreferenceStore)serviceProvider.GetRequiredService<IThemePreferenceStore>());
+        services.AddSingleton<ICalendarZoomPreferenceStore>(serviceProvider =>
+            (ThemePreferenceStore)serviceProvider.GetRequiredService<IThemePreferenceStore>());
         services.AddSingleton<IOsThemeDetector, WindowsOsThemeDetector>();
         services.AddSingleton<IThemeResourceApplier, ApplicationThemeResourceApplier>();
         services.AddSingleton<ThemeManager>();

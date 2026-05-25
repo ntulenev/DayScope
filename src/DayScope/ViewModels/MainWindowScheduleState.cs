@@ -10,6 +10,10 @@ namespace DayScope.ViewModels;
 /// </summary>
 public sealed class MainWindowScheduleState : ObservableObject
 {
+    private const double MINIMUM_CALENDAR_ZOOM_SCALE = 0.85;
+    private const double MAXIMUM_CALENDAR_ZOOM_SCALE = 1.15;
+    private const double CALENDAR_ZOOM_STEP = 0.01;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindowScheduleState"/> class.
     /// </summary>
@@ -72,6 +76,13 @@ public sealed class MainWindowScheduleState : ObservableObject
 
     public bool ShowNowLine { get; private set => SetProperty(ref field, value); }
 
+    public double CalendarZoomScale {
+        get => _calendarZoomScale;
+        set => SetCalendarZoomScale(value);
+    }
+
+    public string CalendarZoomPercentText => $"{(int)Math.Round(CalendarZoomScale * 100)}%";
+
     /// <summary>
     /// Applies the latest dashboard display state.
     /// </summary>
@@ -120,6 +131,12 @@ public sealed class MainWindowScheduleState : ObservableObject
         return true;
     }
 
+    public bool IncreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomScale + CALENDAR_ZOOM_STEP);
+
+    public bool DecreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomScale - CALENDAR_ZOOM_STEP);
+
+    public bool ResetCalendarZoom() => SetCalendarZoomScale(1);
+
     private static void ReplaceCollection<T>(
         ObservableCollection<T> target,
         IReadOnlyList<T> source)
@@ -161,9 +178,25 @@ public sealed class MainWindowScheduleState : ObservableObject
             : new GridLength(4);
     }
 
+    public bool SetCalendarZoomScale(double zoomScale)
+    {
+        var normalizedZoomScale = Math.Round(
+            Math.Clamp(zoomScale, MINIMUM_CALENDAR_ZOOM_SCALE, MAXIMUM_CALENDAR_ZOOM_SCALE),
+            2);
+
+        if (!SetProperty(ref _calendarZoomScale, normalizedZoomScale, nameof(CalendarZoomScale)))
+        {
+            return false;
+        }
+
+        OnPropertyChanged(nameof(CalendarZoomPercentText));
+        return true;
+    }
+
     private readonly ObservableCollection<TimelineHourDisplayState> _primaryTimelineHoursSource = [];
     private readonly ObservableCollection<TimelineHourDisplayState> _secondaryTimelineHoursSource = [];
     private readonly ObservableCollection<AllDayEventDisplayState> _allDayEventsSource = [];
     private readonly ObservableCollection<TimedEventDisplayState> _timedEventsSource = [];
     private bool _showSecondaryTimeZone = true;
+    private double _calendarZoomScale = 1;
 }

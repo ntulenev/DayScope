@@ -5,8 +5,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
-using Microsoft.Win32;
-
 using DayScope.Application.DaySchedule;
 using DayScope.Domain.Configuration;
 using DayScope.Infrastructure.Configuration;
@@ -15,6 +13,7 @@ using DayScope.Themes;
 using DayScope.ViewModels;
 
 using Microsoft.Extensions.Options;
+using Microsoft.Win32;
 
 namespace DayScope.Views;
 
@@ -275,6 +274,55 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Decreases the scale used by the calendar body.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnDecreaseCalendarZoomClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.DecreaseCalendarZoom();
+        ApplyCalendarZoomLayoutUpdate();
+    }
+
+    /// <summary>
+    /// Increases the scale used by the calendar body.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnIncreaseCalendarZoomClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.IncreaseCalendarZoom();
+        ApplyCalendarZoomLayoutUpdate();
+    }
+
+    /// <summary>
+    /// Restores the calendar body scale to the default value.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnResetCalendarZoomClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ResetCalendarZoom();
+        ApplyCalendarZoomLayoutUpdate();
+    }
+
+    /// <summary>
+    /// Recalculates calendar layout after fine-grained zoom changes.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The changed value arguments.</param>
+    private void OnCalendarZoomValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (DataContext is not MainWindowViewModel)
+        {
+            return;
+        }
+
+        _viewModel.SetCalendarZoomScale(e.NewValue);
+        ApplyCalendarZoomLayoutUpdate();
+    }
+
+    /// <summary>
     /// Opens the folder containing the running application.
     /// </summary>
     /// <param name="sender">The event sender.</param>
@@ -412,6 +460,12 @@ public partial class MainWindow : Window
     /// Scrolls the schedule so the current-time marker is visible.
     /// </summary>
     private void ScrollScheduleToNowLine() => MainWindowViewportController.ScrollToNowLine(_viewModel, ScheduleScrollViewer);
+
+    private void ApplyCalendarZoomLayoutUpdate()
+    {
+        UpdateLayout();
+        UpdateScheduleWidth();
+    }
 
     /// <summary>
     /// Hides the window to the tray unless tray-driven close is allowed.

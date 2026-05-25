@@ -73,6 +73,28 @@ public sealed class MainWindowViewModelTests
         action.Should().Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "The constructor throws when the calendar zoom preference store is null.")]
+    [Trait("Category", "Unit")]
+    public void CtorShouldThrowWhenCalendarZoomPreferenceStoreIsNull()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(1, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var secondaryTimeZonePreferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+
+        // Act
+        var action = () => new MainWindowViewModel(coordinator, inbox, secondaryTimeZonePreferenceStore, null!);
+
+        // Assert
+        action.Should().Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "Initialization updates the schedule and inbox state from coordinator events.")]
     [Trait("Category", "Unit")]
     public async Task InitializeAsyncShouldUpdateScheduleAndInboxStateFromCoordinatorEvents()
@@ -161,6 +183,36 @@ public sealed class MainWindowViewModelTests
         viewModel.Schedule.SecondaryTimeColumnWidth.Value.Should().Be(0);
         viewModel.Schedule.SecondaryTimeZoneLeadingGapWidth.Value.Should().Be(0);
         preferenceStore.LoadCalls.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Initialization respects the saved calendar zoom preference.")]
+    [Trait("Category", "Unit")]
+    public async Task InitializeAsyncShouldRespectSavedCalendarZoomPreference()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(0, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var secondaryTimeZonePreferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+        var calendarZoomPreferenceStore = new RecordingCalendarZoomPreferenceStore(calendarZoomScale: 1.08);
+        using var viewModel = new MainWindowViewModel(
+            coordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore);
+
+        // Act
+        await viewModel.InitializeAsync();
+
+        // Assert
+        viewModel.Schedule.CalendarZoomScale.Should().Be(1.08);
+        viewModel.Schedule.CalendarZoomPercentText.Should().Be("108%");
+        calendarZoomPreferenceStore.LoadCalls.Should().Be(1);
     }
 
     [Fact(DisplayName = "Refreshing now delegates to the coordinator and updates the displayed state.")]
@@ -402,6 +454,38 @@ public sealed class MainWindowViewModelTests
             .Which.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Updating calendar zoom clamps the value and persists the choice.")]
+    [Trait("Category", "Unit")]
+    public void SetCalendarZoomScaleShouldClampValueAndPersistChoice()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(0, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var secondaryTimeZonePreferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+        var calendarZoomPreferenceStore = new RecordingCalendarZoomPreferenceStore(calendarZoomScale: 1);
+        using var viewModel = new MainWindowViewModel(
+            coordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore);
+
+        // Act
+        var changed = viewModel.SetCalendarZoomScale(1.2);
+
+        // Assert
+        changed.Should().BeTrue();
+        viewModel.Schedule.CalendarZoomScale.Should().Be(1.15);
+        viewModel.Schedule.CalendarZoomPercentText.Should().Be("115%");
+        calendarZoomPreferenceStore.SavedValues.Should().ContainSingle()
+            .Which.Should().Be(1.15);
+    }
+
     [Fact(DisplayName = "Disposing unsubscribes from coordinator events and disposes the coordinator.")]
     [Trait("Category", "Unit")]
     public async Task DisposeShouldUnsubscribeFromCoordinatorEventsAndDisposeCoordinator()
@@ -534,6 +618,21 @@ public sealed class MainWindowViewModelTests
         }
 
         public void SaveShowSecondaryTimeZone(bool showSecondaryTimeZone) => SavedValues.Add(showSecondaryTimeZone);
+    }
+
+    private sealed class RecordingCalendarZoomPreferenceStore(double calendarZoomScale) : ICalendarZoomPreferenceStore
+    {
+        public int LoadCalls { get; private set; }
+
+        public List<double> SavedValues { get; } = [];
+
+        public double LoadCalendarZoomScale()
+        {
+            LoadCalls++;
+            return calendarZoomScale;
+        }
+
+        public void SaveCalendarZoomScale(double calendarZoomScale) => SavedValues.Add(calendarZoomScale);
     }
 
     private sealed class RecordingDashboardService(

@@ -304,6 +304,17 @@
                BasedOn="{StaticResource HeaderMenuPopupButtonStyle}">
             <Setter Property="Padding" Value="14,8" />
         </Style>
+
+        <Style x:Key="HeaderMenuZoomButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource HeaderMenuPopupButtonStyle}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource HeaderSurfaceBrush}" />
+        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
@@ -574,6 +585,78 @@
                                                Text="Copy Schedule" />
                                 </Button>
 
+                                <Border Padding="12,10,12,8">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="8" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="64" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock FontFamily="{StaticResource UiFont}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Text="Zoom" />
+
+                                            <Button Grid.Column="1"
+                                                    ToolTip="Zoom out"
+                                                    Style="{StaticResource HeaderMenuZoomButtonStyle}"
+                                                    Click="OnDecreaseCalendarZoomClick">
+                                                <TextBlock FontFamily="{StaticResource UiFont}"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                                           Text="-" />
+                                            </Button>
+
+                                            <Button Grid.Column="2"
+                                                    Margin="6,0"
+                                                    MinWidth="52"
+                                                    ToolTip="Reset zoom"
+                                                    Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                                    Click="OnResetCalendarZoomClick">
+                                                <TextBlock FontFamily="{StaticResource UiFont}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           Text="{Binding Schedule.CalendarZoomPercentText}" />
+                                            </Button>
+
+                                            <Button Grid.Column="3"
+                                                    ToolTip="Zoom in"
+                                                    Style="{StaticResource HeaderMenuZoomButtonStyle}"
+                                                    Click="OnIncreaseCalendarZoomClick">
+                                                <TextBlock FontFamily="{StaticResource UiFont}"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                                           Text="+" />
+                                            </Button>
+                                        </Grid>
+
+                                        <Slider Grid.Row="2"
+                                                Minimum="0.85"
+                                                Maximum="1.15"
+                                                TickFrequency="0.01"
+                                                IsSnapToTickEnabled="True"
+                                                SmallChange="0.01"
+                                                LargeChange="0.05"
+                                                Value="{Binding Schedule.CalendarZoomScale, Mode=OneWay}"
+                                                ValueChanged="OnCalendarZoomValueChanged" />
+                                    </Grid>
+                                </Border>
+
                                 <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
                                         Click="OnToggleOpenFolderMenuClick">
                                     <Grid>
@@ -780,6 +863,11 @@
                           HorizontalScrollBarVisibility="Disabled"
                           Padding="12,12,10,16">
                 <Grid>
+                    <Grid.LayoutTransform>
+                        <ScaleTransform ScaleX="{Binding Schedule.CalendarZoomScale}"
+                                        ScaleY="{Binding Schedule.CalendarZoomScale}" />
+                    </Grid.LayoutTransform>
+
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />

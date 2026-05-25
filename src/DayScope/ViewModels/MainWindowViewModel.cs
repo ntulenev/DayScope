@@ -19,6 +19,7 @@ public sealed class MainWindowViewModel : IDisposable
             dashboardCoordinator,
             inbox,
             secondaryTimeZonePreferenceStore: null,
+            calendarZoomPreferenceStore: null,
             throwOnNullPreferenceStore: false)
     {
     }
@@ -33,7 +34,35 @@ public sealed class MainWindowViewModel : IDisposable
         MainWindowDashboardCoordinator dashboardCoordinator,
         MainWindowInboxState inbox,
         ISecondaryTimeZonePreferenceStore secondaryTimeZonePreferenceStore)
-        : this(dashboardCoordinator, inbox, secondaryTimeZonePreferenceStore, throwOnNullPreferenceStore: true)
+        : this(
+            dashboardCoordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore: null,
+            throwOnNullPreferenceStore: true,
+            throwOnNullCalendarZoomPreferenceStore: false)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
+    /// </summary>
+    /// <param name="dashboardCoordinator">The coordinator used to refresh and navigate the dashboard.</param>
+    /// <param name="inbox">The inbox state shown by the main window.</param>
+    /// <param name="secondaryTimeZonePreferenceStore">The store used to persist secondary-time-zone visibility.</param>
+    /// <param name="calendarZoomPreferenceStore">The store used to persist calendar body zoom.</param>
+    public MainWindowViewModel(
+        MainWindowDashboardCoordinator dashboardCoordinator,
+        MainWindowInboxState inbox,
+        ISecondaryTimeZonePreferenceStore secondaryTimeZonePreferenceStore,
+        ICalendarZoomPreferenceStore calendarZoomPreferenceStore)
+        : this(
+            dashboardCoordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore,
+            throwOnNullPreferenceStore: true,
+            throwOnNullCalendarZoomPreferenceStore: true)
     {
     }
 
@@ -41,7 +70,9 @@ public sealed class MainWindowViewModel : IDisposable
         MainWindowDashboardCoordinator dashboardCoordinator,
         MainWindowInboxState inbox,
         ISecondaryTimeZonePreferenceStore? secondaryTimeZonePreferenceStore,
-        bool throwOnNullPreferenceStore = false)
+        ICalendarZoomPreferenceStore? calendarZoomPreferenceStore,
+        bool throwOnNullPreferenceStore = false,
+        bool throwOnNullCalendarZoomPreferenceStore = false)
     {
         ArgumentNullException.ThrowIfNull(dashboardCoordinator);
         ArgumentNullException.ThrowIfNull(inbox);
@@ -50,15 +81,26 @@ public sealed class MainWindowViewModel : IDisposable
             ArgumentNullException.ThrowIfNull(secondaryTimeZonePreferenceStore);
         }
 
+        if (throwOnNullCalendarZoomPreferenceStore)
+        {
+            ArgumentNullException.ThrowIfNull(calendarZoomPreferenceStore);
+        }
+
         _dashboardCoordinator = dashboardCoordinator;
         Schedule = new MainWindowScheduleState();
         Inbox = inbox;
         EventDetails = new MainWindowEventDetailsState();
         _secondaryTimeZonePreferenceStore = secondaryTimeZonePreferenceStore;
+        _calendarZoomPreferenceStore = calendarZoomPreferenceStore;
 
         if (_secondaryTimeZonePreferenceStore is not null)
         {
             Schedule.SetShowSecondaryTimeZone(_secondaryTimeZonePreferenceStore.LoadShowSecondaryTimeZone());
+        }
+
+        if (_calendarZoomPreferenceStore is not null)
+        {
+            Schedule.SetCalendarZoomScale(_calendarZoomPreferenceStore.LoadCalendarZoomScale());
         }
 
         _dashboardCoordinator.DisplayStateChanged += OnDisplayStateChanged;
@@ -150,6 +192,67 @@ public sealed class MainWindowViewModel : IDisposable
     public bool ToggleShowSecondaryTimeZone() => SetShowSecondaryTimeZone(!Schedule.ShowSecondaryTimeZone);
 
     /// <summary>
+    /// Updates and persists the calendar body zoom scale.
+    /// </summary>
+    /// <param name="calendarZoomScale">The requested calendar body zoom scale.</param>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool SetCalendarZoomScale(double calendarZoomScale)
+    {
+        if (!Schedule.SetCalendarZoomScale(calendarZoomScale))
+        {
+            return false;
+        }
+
+        _calendarZoomPreferenceStore?.SaveCalendarZoomScale(Schedule.CalendarZoomScale);
+        return true;
+    }
+
+    /// <summary>
+    /// Increases and persists the calendar body zoom scale.
+    /// </summary>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool IncreaseCalendarZoom()
+    {
+        if (!Schedule.IncreaseCalendarZoom())
+        {
+            return false;
+        }
+
+        _calendarZoomPreferenceStore?.SaveCalendarZoomScale(Schedule.CalendarZoomScale);
+        return true;
+    }
+
+    /// <summary>
+    /// Decreases and persists the calendar body zoom scale.
+    /// </summary>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool DecreaseCalendarZoom()
+    {
+        if (!Schedule.DecreaseCalendarZoom())
+        {
+            return false;
+        }
+
+        _calendarZoomPreferenceStore?.SaveCalendarZoomScale(Schedule.CalendarZoomScale);
+        return true;
+    }
+
+    /// <summary>
+    /// Resets and persists the calendar body zoom scale.
+    /// </summary>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool ResetCalendarZoom()
+    {
+        if (!Schedule.ResetCalendarZoom())
+        {
+            return false;
+        }
+
+        _calendarZoomPreferenceStore?.SaveCalendarZoomScale(Schedule.CalendarZoomScale);
+        return true;
+    }
+
+    /// <summary>
     /// Stops the background timers owned by the view model.
     /// </summary>
     public void Dispose()
@@ -173,4 +276,5 @@ public sealed class MainWindowViewModel : IDisposable
 
     private readonly MainWindowDashboardCoordinator _dashboardCoordinator;
     private readonly ISecondaryTimeZonePreferenceStore? _secondaryTimeZonePreferenceStore;
+    private readonly ICalendarZoomPreferenceStore? _calendarZoomPreferenceStore;
 }

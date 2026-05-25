@@ -7,8 +7,14 @@ namespace DayScope.Themes;
 /// <summary>
 /// Persists user interface preferences in local app data.
 /// </summary>
-public sealed class ThemePreferenceStore : IThemePreferenceStore, ISecondaryTimeZonePreferenceStore
+public sealed class ThemePreferenceStore :
+    IThemePreferenceStore,
+    ISecondaryTimeZonePreferenceStore,
+    ICalendarZoomPreferenceStore
 {
+    private const double MINIMUM_CALENDAR_ZOOM_SCALE = 0.85;
+    private const double MAXIMUM_CALENDAR_ZOOM_SCALE = 1.15;
+
     /// <summary>
     /// Loads the last saved theme mode.
     /// </summary>
@@ -27,7 +33,8 @@ public sealed class ThemePreferenceStore : IThemePreferenceStore, ISecondaryTime
         WritePreferences(new ThemePreferencesDocument
         {
             ThemeMode = themeMode,
-            ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone
+            ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone,
+            CalendarZoomScale = existingPreferences.CalendarZoomScale
         });
     }
 
@@ -47,7 +54,29 @@ public sealed class ThemePreferenceStore : IThemePreferenceStore, ISecondaryTime
         WritePreferences(new ThemePreferencesDocument
         {
             ThemeMode = existingPreferences.ThemeMode,
-            ShowSecondaryTimeZone = showSecondaryTimeZone
+            ShowSecondaryTimeZone = showSecondaryTimeZone,
+            CalendarZoomScale = existingPreferences.CalendarZoomScale
+        });
+    }
+
+    /// <summary>
+    /// Loads the persisted calendar zoom scale.
+    /// </summary>
+    /// <returns>The saved zoom scale, or 1 when no preference is available.</returns>
+    public double LoadCalendarZoomScale() => NormalizeCalendarZoomScale(ReadPreferences().CalendarZoomScale ?? 1);
+
+    /// <summary>
+    /// Saves the calendar zoom scale.
+    /// </summary>
+    /// <param name="calendarZoomScale">The calendar zoom scale to persist.</param>
+    public void SaveCalendarZoomScale(double calendarZoomScale)
+    {
+        var existingPreferences = ReadPreferences();
+        WritePreferences(new ThemePreferencesDocument
+        {
+            ThemeMode = existingPreferences.ThemeMode,
+            ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone,
+            CalendarZoomScale = NormalizeCalendarZoomScale(calendarZoomScale)
         });
     }
 
@@ -84,6 +113,11 @@ public sealed class ThemePreferenceStore : IThemePreferenceStore, ISecondaryTime
             // Ignore persistence failures and keep the app usable.
         }
     }
+
+    private static double NormalizeCalendarZoomScale(double calendarZoomScale) =>
+        Math.Round(
+            Math.Clamp(calendarZoomScale, MINIMUM_CALENDAR_ZOOM_SCALE, MAXIMUM_CALENDAR_ZOOM_SCALE),
+            2);
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
