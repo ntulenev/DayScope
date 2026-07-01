@@ -16,7 +16,8 @@
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="ClearType"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        PreviewKeyDown="OnMainWindowPreviewKeyDown">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <FontFamily x:Key="UiFont">Segoe UI Variable Display, Segoe UI, Arial</FontFamily>
@@ -609,7 +610,7 @@
                                                        Text="Zoom" />
 
                                             <Button Grid.Column="1"
-                                                    ToolTip="Zoom out"
+                                                    ToolTip="Zoom out (Ctrl+-)"
                                                     Style="{StaticResource HeaderMenuZoomButtonStyle}"
                                                     Click="OnDecreaseCalendarZoomClick">
                                                 <TextBlock FontFamily="{StaticResource UiFont}"
@@ -634,7 +635,7 @@
                                             </Button>
 
                                             <Button Grid.Column="3"
-                                                    ToolTip="Zoom in"
+                                                    ToolTip="Zoom in (Ctrl++)"
                                                     Style="{StaticResource HeaderMenuZoomButtonStyle}"
                                                     Click="OnIncreaseCalendarZoomClick">
                                                 <TextBlock FontFamily="{StaticResource UiFont}"

@@ -132,6 +132,22 @@ public partial class MainWindow : Window
     public void CloseFromTray() => _shellController.CloseFromTray(this);
 
     /// <summary>
+    /// Applies main-window keyboard shortcuts before focused child controls consume them.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The key event arguments.</param>
+    private void OnMainWindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (!CalendarZoomKeyboardShortcut.TryResolve(GetShortcutKey(e), Keyboard.Modifiers, out var action))
+        {
+            return;
+        }
+
+        ChangeCalendarZoom(action);
+        e.Handled = true;
+    }
+
+    /// <summary>
     /// Opens details when the user clicks an event card.
     /// </summary>
     /// <param name="sender">The event sender.</param>
@@ -280,8 +296,7 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnDecreaseCalendarZoomClick(object sender, RoutedEventArgs e)
     {
-        _viewModel.DecreaseCalendarZoom();
-        ApplyCalendarZoomLayoutUpdate();
+        ChangeCalendarZoom(CalendarZoomKeyboardShortcutAction.Decrease);
     }
 
     /// <summary>
@@ -291,8 +306,7 @@ public partial class MainWindow : Window
     /// <param name="e">The routed event arguments.</param>
     private void OnIncreaseCalendarZoomClick(object sender, RoutedEventArgs e)
     {
-        _viewModel.IncreaseCalendarZoom();
-        ApplyCalendarZoomLayoutUpdate();
+        ChangeCalendarZoom(CalendarZoomKeyboardShortcutAction.Increase);
     }
 
     /// <summary>
@@ -465,6 +479,31 @@ public partial class MainWindow : Window
     {
         UpdateLayout();
         UpdateScheduleWidth();
+    }
+
+    private void ChangeCalendarZoom(CalendarZoomKeyboardShortcutAction action)
+    {
+        var changed = action switch
+        {
+            CalendarZoomKeyboardShortcutAction.Decrease => _viewModel.DecreaseCalendarZoom(),
+            CalendarZoomKeyboardShortcutAction.Increase => _viewModel.IncreaseCalendarZoom(),
+            _ => false
+        };
+
+        if (changed)
+        {
+            ApplyCalendarZoomLayoutUpdate();
+        }
+    }
+
+    private static Key GetShortcutKey(System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == Key.System)
+        {
+            return e.SystemKey;
+        }
+
+        return e.Key == Key.ImeProcessed ? e.ImeProcessedKey : e.Key;
     }
 
     /// <summary>
