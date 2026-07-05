@@ -38,6 +38,10 @@ public sealed class PresentationServiceCollectionExtensionsTests
             descriptor.ImplementationFactory != null &&
             descriptor.Lifetime == ServiceLifetime.Singleton);
         services.Should().Contain(descriptor =>
+            descriptor.ServiceType == typeof(IPrivacyModePreferenceStore) &&
+            descriptor.ImplementationFactory != null &&
+            descriptor.Lifetime == ServiceLifetime.Singleton);
+        services.Should().Contain(descriptor =>
             descriptor.ServiceType == typeof(IOsThemeDetector) &&
             descriptor.ImplementationType == typeof(WindowsOsThemeDetector) &&
             descriptor.Lifetime == ServiceLifetime.Singleton);

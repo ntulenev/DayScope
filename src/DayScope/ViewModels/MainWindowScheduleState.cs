@@ -13,6 +13,7 @@ public sealed class MainWindowScheduleState : ObservableObject
     private const double MINIMUM_CALENDAR_ZOOM_SCALE = 0.85;
     private const double MAXIMUM_CALENDAR_ZOOM_SCALE = 1.15;
     private const double CALENDAR_ZOOM_STEP = 0.01;
+    private const string PRIVATE_EVENT_TITLE = "Private event";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindowScheduleState"/> class.
@@ -83,6 +84,8 @@ public sealed class MainWindowScheduleState : ObservableObject
 
     public string CalendarZoomPercentText => $"{(int)Math.Round(CalendarZoomScale * 100)}%";
 
+    public bool IsPrivacyModeEnabled => _isPrivacyModeEnabled;
+
     /// <summary>
     /// Applies the latest dashboard display state.
     /// </summary>
@@ -91,6 +94,7 @@ public sealed class MainWindowScheduleState : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(state);
 
+        _sourceState = state;
         DisplayDate = state.DisplayDate;
         MonthTitle = state.MonthTitle;
         DayTitle = state.DayTitle;
@@ -109,10 +113,7 @@ public sealed class MainWindowScheduleState : ObservableObject
         NowLineText = state.NowLineText;
         ShowNowLine = state.NowLineTop.HasValue;
 
-        ReplaceCollection(_primaryTimelineHoursSource, state.PrimaryTimelineHours);
-        ReplaceCollection(_secondaryTimelineHoursSource, state.SecondaryTimelineHours);
-        ReplaceCollection(_allDayEventsSource, state.AllDayEvents);
-        ReplaceCollection(_timedEventsSource, state.TimedEvents);
+        ApplyVisibleCollections(state);
     }
 
     /// <summary>
@@ -136,6 +137,26 @@ public sealed class MainWindowScheduleState : ObservableObject
     public bool DecreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomScale - CALENDAR_ZOOM_STEP);
 
     public bool ResetCalendarZoom() => SetCalendarZoomScale(1);
+
+    /// <summary>
+    /// Updates whether sensitive event details should be hidden in the schedule UI.
+    /// </summary>
+    /// <param name="isPrivacyModeEnabled">Whether sensitive details should be hidden.</param>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool SetPrivacyModeEnabled(bool isPrivacyModeEnabled)
+    {
+        if (!SetProperty(ref _isPrivacyModeEnabled, isPrivacyModeEnabled, nameof(IsPrivacyModeEnabled)))
+        {
+            return false;
+        }
+
+        if (_sourceState is not null)
+        {
+            ApplyVisibleCollections(_sourceState);
+        }
+
+        return true;
+    }
 
     private static void ReplaceCollection<T>(
         ObservableCollection<T> target,
@@ -178,6 +199,48 @@ public sealed class MainWindowScheduleState : ObservableObject
             : new GridLength(4);
     }
 
+    private void ApplyVisibleCollections(DayScheduleDisplayState state)
+    {
+        IReadOnlyList<AllDayEventDisplayState> allDayEvents = IsPrivacyModeEnabled
+            ? [.. state.AllDayEvents.Select(RedactAllDayEvent)]
+            : state.AllDayEvents;
+        IReadOnlyList<TimedEventDisplayState> timedEvents = IsPrivacyModeEnabled
+            ? [.. state.TimedEvents.Select(RedactTimedEvent)]
+            : state.TimedEvents;
+
+        ReplaceCollection(_primaryTimelineHoursSource, state.PrimaryTimelineHours);
+        ReplaceCollection(_secondaryTimelineHoursSource, state.SecondaryTimelineHours);
+        ReplaceCollection(_allDayEventsSource, allDayEvents);
+        ReplaceCollection(_timedEventsSource, timedEvents);
+    }
+
+    private static AllDayEventDisplayState RedactAllDayEvent(AllDayEventDisplayState eventState) =>
+        eventState with
+        {
+            Title = PRIVATE_EVENT_TITLE,
+            LeadingIcon = string.Empty,
+            Details = RedactEventDetails(eventState.Details)
+        };
+
+    private static TimedEventDisplayState RedactTimedEvent(TimedEventDisplayState eventState) =>
+        eventState with
+        {
+            Title = PRIVATE_EVENT_TITLE,
+            LeadingIcon = string.Empty,
+            Details = RedactEventDetails(eventState.Details)
+        };
+
+    private static EventDetailsDisplayState RedactEventDetails(EventDetailsDisplayState details) =>
+        details with
+        {
+            Title = PRIVATE_EVENT_TITLE,
+            LeadingIcon = string.Empty,
+            Organizer = null,
+            Description = null,
+            JoinUrl = null,
+            Participants = []
+        };
+
     public bool SetCalendarZoomScale(double zoomScale)
     {
         var normalizedZoomScale = Math.Round(
@@ -197,6 +260,8 @@ public sealed class MainWindowScheduleState : ObservableObject
     private readonly ObservableCollection<TimelineHourDisplayState> _secondaryTimelineHoursSource = [];
     private readonly ObservableCollection<AllDayEventDisplayState> _allDayEventsSource = [];
     private readonly ObservableCollection<TimedEventDisplayState> _timedEventsSource = [];
+    private DayScheduleDisplayState? _sourceState;
     private bool _showSecondaryTimeZone = true;
+    private bool _isPrivacyModeEnabled;
     private double _calendarZoomScale = 1;
 }

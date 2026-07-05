@@ -191,6 +191,40 @@ public sealed class MainWindowInboxStateTests
         workspaceUriBuilder.BuildCalendarDayUriCalls.Should().Be(3);
     }
 
+    [Fact(DisplayName = "Privacy mode hides unread email details without changing the stored snapshot.")]
+    [Trait("Category", "Unit")]
+    public void SetPrivacyModeEnabledShouldHideUnreadEmailDetails()
+    {
+        // Arrange
+        var state = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder
+        {
+            BuildCalendarDayUriHandler = static (_, _) => new Uri("https://calendar.google.com/calendar/r/day")
+        });
+        state.ApplySnapshot(new EmailInboxSnapshot(
+            18,
+            "user@example.com",
+            new Uri("https://mail.google.com/mail/u/?authuser=user%40example.com#inbox")));
+
+        // Act
+        var changed = state.SetPrivacyModeEnabled(true);
+
+        // Assert
+        changed.Should().BeTrue();
+        state.IsPrivacyModeEnabled.Should().BeTrue();
+        state.UnreadEmailCount.Should().Be(18);
+        state.UnreadEmailCountText.Should().Be("--");
+        state.HasUnreadEmails.Should().BeFalse();
+        state.UnreadEmailSummaryText.Should().Be("Email details hidden");
+
+        // Act
+        state.SetPrivacyModeEnabled(false);
+
+        // Assert
+        state.UnreadEmailCountText.Should().Be("18");
+        state.HasUnreadEmails.Should().BeTrue();
+        state.UnreadEmailSummaryText.Should().Be("18 unread emails");
+    }
+
     private sealed class RecordingGoogleWorkspaceUriBuilder : IGoogleWorkspaceUriBuilder
     {
         public int BuildCalendarDayUriCalls { get; private set; }

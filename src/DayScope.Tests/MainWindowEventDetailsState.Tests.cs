@@ -134,6 +134,62 @@ public sealed class MainWindowEventDetailsStateTests
         state.JoinLabel.Should().Be("Join Google Meet");
     }
 
+    [Fact(DisplayName = "Privacy mode redacts the selected event details and restores them when disabled.")]
+    [Trait("Category", "Unit")]
+    public void SetPrivacyModeEnabledShouldRedactAndRestoreSelectedDetails()
+    {
+        // Arrange
+        var state = new MainWindowEventDetailsState();
+        var details = CreateDetails(
+            organizer: "Alice",
+            description: "Discuss roadmap",
+            joinUrl: new Uri("https://meet.google.com/abc-defg-hij"),
+            participants: [new EventParticipantDisplayState("Bob", "Accepted", true)]);
+        state.ApplyGoogleAccountEmail("user@example.com");
+        state.Open(new TimedEventDisplayState(
+            "Standup",
+            "9:00AM - 10:00AM",
+            0,
+            60,
+            0,
+            200,
+            false,
+            false,
+            true,
+            true,
+            EventAppearance.Accepted,
+            "Accepted",
+            string.Empty,
+            details));
+
+        // Act
+        var changed = state.SetPrivacyModeEnabled(true);
+
+        // Assert
+        changed.Should().BeTrue();
+        state.SelectedEventDetails!.Title.Should().Be("Private event");
+        state.SelectedEventDetails.LeadingIcon.Should().BeEmpty();
+        state.SelectedEventDetails.Organizer.Should().BeNull();
+        state.SelectedEventDetails.Description.Should().BeNull();
+        state.SelectedEventDetails.JoinUrl.Should().BeNull();
+        state.SelectedEventDetails.Participants.Should().BeEmpty();
+        state.HasOrganizer.Should().BeFalse();
+        state.HasDescription.Should().BeFalse();
+        state.HasJoinUrl.Should().BeFalse();
+        state.HasParticipants.Should().BeFalse();
+
+        // Act
+        state.SetPrivacyModeEnabled(false);
+
+        // Assert
+        state.SelectedEventDetails!.Title.Should().Be("Standup");
+        state.SelectedEventDetails.Organizer.Should().Be("Alice");
+        state.SelectedEventDetails.Description.Should().Be("Discuss roadmap");
+        state.SelectedEventDetails.JoinUrl.Should().Be(
+            new Uri("https://meet.google.com/abc-defg-hij?authuser=user%40example.com"));
+        state.SelectedEventDetails.Participants.Should().ContainSingle();
+    }
+
     [Fact(DisplayName = "Opening an unsupported object clears the selected event details.")]
     [Trait("Category", "Unit")]
     public void OpenShouldClearDetailsWhenEventTypeIsUnsupported()

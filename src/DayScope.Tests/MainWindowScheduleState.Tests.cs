@@ -124,6 +124,46 @@ public sealed class MainWindowScheduleStateTests
         state.SecondaryTimeZoneTrailingGapWidth.Value.Should().Be(4);
     }
 
+    [Fact(DisplayName = "Privacy mode redacts event titles and details without changing schedule metadata.")]
+    [Trait("Category", "Unit")]
+    public void SetPrivacyModeEnabledShouldRedactEventTitlesAndDetails()
+    {
+        // Arrange
+        var state = new MainWindowScheduleState();
+        state.Apply(CreateDisplayState(
+            primaryTimeZoneLabel: "UTC",
+            secondaryTimeZoneLabel: null,
+            nowLineTop: null));
+
+        // Act
+        var changed = state.SetPrivacyModeEnabled(true);
+
+        // Assert
+        changed.Should().BeTrue();
+        state.IsPrivacyModeEnabled.Should().BeTrue();
+        state.AllDayEvents.Should().ContainSingle();
+        state.AllDayEvents[0].Title.Should().Be("Private event");
+        state.AllDayEvents[0].LeadingIcon.Should().BeEmpty();
+        state.TimedEvents.Should().ContainSingle();
+        state.TimedEvents[0].Title.Should().Be("Private event");
+        state.TimedEvents[0].ScheduleText.Should().Be("9:00AM-9:30AM");
+        state.TimedEvents[0].Details.Title.Should().Be("Private event");
+        state.TimedEvents[0].Details.Organizer.Should().BeNull();
+        state.TimedEvents[0].Details.Description.Should().BeNull();
+        state.TimedEvents[0].Details.JoinUrl.Should().BeNull();
+
+        // Act
+        changed = state.SetPrivacyModeEnabled(false);
+
+        // Assert
+        changed.Should().BeTrue();
+        state.AllDayEvents[0].Title.Should().Be("Planning");
+        state.TimedEvents[0].Title.Should().Be("Standup");
+        state.TimedEvents[0].Details.Title.Should().Be("Standup");
+        state.TimedEvents[0].Details.Description.Should().Be("Notes");
+        state.TimedEvents[0].Details.JoinUrl.Should().Be(new Uri("https://meet.google.com/abc-defg-hij"));
+    }
+
     private static DayScheduleDisplayState CreateDisplayState(
         string primaryTimeZoneLabel,
         string? secondaryTimeZoneLabel,

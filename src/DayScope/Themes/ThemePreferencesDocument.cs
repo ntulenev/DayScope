@@ -19,4 +19,9 @@ internal sealed class ThemePreferencesDocument
     /// Gets the persisted calendar body zoom scale.
     /// </summary>
     public double? CalendarZoomScale { get; init; }
+
+    /// <summary>
+    /// Gets the persisted privacy-mode preference.
+    /// </summary>
+    public bool? IsPrivacyModeEnabled { get; init; }
 }

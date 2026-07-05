@@ -95,6 +95,34 @@ public sealed class MainWindowViewModelTests
         action.Should().Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "The constructor throws when the privacy-mode preference store is null.")]
+    [Trait("Category", "Unit")]
+    public void CtorShouldThrowWhenPrivacyModePreferenceStoreIsNull()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(1, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var secondaryTimeZonePreferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+        var calendarZoomPreferenceStore = new RecordingCalendarZoomPreferenceStore(calendarZoomScale: 1);
+
+        // Act
+        var action = () => new MainWindowViewModel(
+            coordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore,
+            null!);
+
+        // Assert
+        action.Should().Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "Initialization updates the schedule and inbox state from coordinator events.")]
     [Trait("Category", "Unit")]
     public async Task InitializeAsyncShouldUpdateScheduleAndInboxStateFromCoordinatorEvents()
@@ -213,6 +241,42 @@ public sealed class MainWindowViewModelTests
         viewModel.Schedule.CalendarZoomScale.Should().Be(1.08);
         viewModel.Schedule.CalendarZoomPercentText.Should().Be("108%");
         calendarZoomPreferenceStore.LoadCalls.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Initialization respects the saved privacy-mode preference.")]
+    [Trait("Category", "Unit")]
+    public async Task InitializeAsyncShouldRespectSavedPrivacyModePreference()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(18, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var secondaryTimeZonePreferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+        var calendarZoomPreferenceStore = new RecordingCalendarZoomPreferenceStore(calendarZoomScale: 1);
+        var privacyModePreferenceStore = new RecordingPrivacyModePreferenceStore(isPrivacyModeEnabled: true);
+        using var viewModel = new MainWindowViewModel(
+            coordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore,
+            privacyModePreferenceStore);
+
+        // Act
+        await viewModel.InitializeAsync();
+
+        // Assert
+        viewModel.Schedule.IsPrivacyModeEnabled.Should().BeTrue();
+        viewModel.Inbox.IsPrivacyModeEnabled.Should().BeTrue();
+        viewModel.EventDetails.IsPrivacyModeEnabled.Should().BeTrue();
+        viewModel.Inbox.UnreadEmailCount.Should().Be(18);
+        viewModel.Inbox.UnreadEmailCountText.Should().Be("--");
+        privacyModePreferenceStore.LoadCalls.Should().Be(1);
+        privacyModePreferenceStore.SavedValues.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Refreshing now delegates to the coordinator and updates the displayed state.")]
@@ -486,6 +550,59 @@ public sealed class MainWindowViewModelTests
             .Which.Should().Be(1.15);
     }
 
+    [Fact(DisplayName = "Toggling privacy mode updates child states and persists the choice.")]
+    [Trait("Category", "Unit")]
+    public async Task TogglePrivacyModeShouldUpdateChildStatesAndPersistChoice()
+    {
+        // Arrange
+        using var coordinator = CreateCoordinator(
+            CreateDisplayState(),
+            new EmailInboxSnapshot(18, "user@example.com", new Uri("https://mail.google.com/mail/")),
+            out _,
+            out _,
+            out _,
+            out _);
+        var inbox = new MainWindowInboxState(new RecordingGoogleWorkspaceUriBuilder());
+        var secondaryTimeZonePreferenceStore = new RecordingSecondaryTimeZonePreferenceStore(showSecondaryTimeZone: true);
+        var calendarZoomPreferenceStore = new RecordingCalendarZoomPreferenceStore(calendarZoomScale: 1);
+        var privacyModePreferenceStore = new RecordingPrivacyModePreferenceStore(isPrivacyModeEnabled: false);
+        using var viewModel = new MainWindowViewModel(
+            coordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore,
+            privacyModePreferenceStore);
+        await viewModel.InitializeAsync();
+        viewModel.OpenEventDetails(new TimedEventDisplayState(
+            "Standup",
+            "9:00AM - 10:00AM",
+            0,
+            60,
+            0,
+            200,
+            false,
+            false,
+            true,
+            true,
+            EventAppearance.Accepted,
+            "Accepted",
+            string.Empty,
+            CreateDetails()));
+
+        // Act
+        var changed = viewModel.TogglePrivacyMode();
+
+        // Assert
+        changed.Should().BeTrue();
+        viewModel.Schedule.IsPrivacyModeEnabled.Should().BeTrue();
+        viewModel.Inbox.UnreadEmailCountText.Should().Be("--");
+        viewModel.Inbox.HasUnreadEmails.Should().BeFalse();
+        viewModel.EventDetails.SelectedEventDetails!.Title.Should().Be("Private event");
+        viewModel.EventDetails.HasDescription.Should().BeFalse();
+        privacyModePreferenceStore.SavedValues.Should().ContainSingle()
+            .Which.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Disposing unsubscribes from coordinator events and disposes the coordinator.")]
     [Trait("Category", "Unit")]
     public async Task DisposeShouldUnsubscribeFromCoordinatorEventsAndDisposeCoordinator()
@@ -633,6 +750,21 @@ public sealed class MainWindowViewModelTests
         }
 
         public void SaveCalendarZoomScale(double calendarZoomScale) => SavedValues.Add(calendarZoomScale);
+    }
+
+    private sealed class RecordingPrivacyModePreferenceStore(bool isPrivacyModeEnabled) : IPrivacyModePreferenceStore
+    {
+        public int LoadCalls { get; private set; }
+
+        public List<bool> SavedValues { get; } = [];
+
+        public bool LoadPrivacyModeEnabled()
+        {
+            LoadCalls++;
+            return isPrivacyModeEnabled;
+        }
+
+        public void SavePrivacyModeEnabled(bool isPrivacyModeEnabled) => SavedValues.Add(isPrivacyModeEnabled);
     }
 
     private sealed class RecordingDashboardService(

@@ -28,6 +28,8 @@ public static class ServiceCollectionExtensions
             (ThemePreferenceStore)serviceProvider.GetRequiredService<IThemePreferenceStore>());
         services.AddSingleton<ICalendarZoomPreferenceStore>(serviceProvider =>
             (ThemePreferenceStore)serviceProvider.GetRequiredService<IThemePreferenceStore>());
+        services.AddSingleton<IPrivacyModePreferenceStore>(serviceProvider =>
+            (ThemePreferenceStore)serviceProvider.GetRequiredService<IThemePreferenceStore>());
         services.AddSingleton<IOsThemeDetector, WindowsOsThemeDetector>();
         services.AddSingleton<IThemeResourceApplier, ApplicationThemeResourceApplier>();
         services.AddSingleton<ThemeManager>();

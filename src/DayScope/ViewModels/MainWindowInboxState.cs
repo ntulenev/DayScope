@@ -31,15 +31,17 @@ public sealed class MainWindowInboxState : ObservableObject
 
     public string UnreadEmailCountText => _unreadEmailCount switch
     {
+        _ when IsPrivacyModeEnabled => "--",
         null => "--",
         > 99 => "99+",
         _ => _unreadEmailCount.Value.ToString(CultureInfo.InvariantCulture)
     };
 
-    public bool HasUnreadEmails => _unreadEmailCount is > 0;
+    public bool HasUnreadEmails => !IsPrivacyModeEnabled && _unreadEmailCount is > 0;
 
     public string UnreadEmailSummaryText => _unreadEmailCount switch
     {
+        _ when IsPrivacyModeEnabled => "Email details hidden",
         null => "Open Gmail inbox",
         0 => "Inbox is clear",
         1 => "1 unread email",
@@ -48,6 +50,8 @@ public sealed class MainWindowInboxState : ObservableObject
             "{0} unread emails",
             _unreadEmailCount.Value)
     };
+
+    public bool IsPrivacyModeEnabled => _isPrivacyModeEnabled;
 
     /// <summary>
     /// Updates the selected display date used to build the Google Calendar deep link.
@@ -75,6 +79,24 @@ public sealed class MainWindowInboxState : ObservableObject
         SetUnreadEmailCount(snapshot.UnreadCount);
         SetUnreadEmailInboxUri(snapshot.InboxUri);
         SetGoogleAccountEmail(snapshot.EmailAddress);
+    }
+
+    /// <summary>
+    /// Updates whether sensitive inbox details should be hidden in the UI.
+    /// </summary>
+    /// <param name="isPrivacyModeEnabled">Whether sensitive details should be hidden.</param>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool SetPrivacyModeEnabled(bool isPrivacyModeEnabled)
+    {
+        if (!SetProperty(ref _isPrivacyModeEnabled, isPrivacyModeEnabled, nameof(IsPrivacyModeEnabled)))
+        {
+            return false;
+        }
+
+        OnPropertyChanged(nameof(UnreadEmailCountText));
+        OnPropertyChanged(nameof(HasUnreadEmails));
+        OnPropertyChanged(nameof(UnreadEmailSummaryText));
+        return true;
     }
 
     private void SetUnreadEmailCount(int? unreadEmailCount)
@@ -136,6 +158,7 @@ public sealed class MainWindowInboxState : ObservableObject
     private DateOnly _displayDate = DateOnly.FromDateTime(DateTime.Today);
     private string? _googleAccountEmail;
     private int? _unreadEmailCount;
+    private bool _isPrivacyModeEnabled;
     private Uri _googleCalendarUri = new("https://calendar.google.com/calendar/r/day", UriKind.Absolute);
     private Uri _unreadEmailInboxUri = new("https://mail.google.com/mail/", UriKind.Absolute);
 }

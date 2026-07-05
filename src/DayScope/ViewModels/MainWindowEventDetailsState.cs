@@ -7,6 +7,8 @@ namespace DayScope.ViewModels;
 /// </summary>
 public sealed class MainWindowEventDetailsState : ObservableObject
 {
+    private const string PRIVATE_EVENT_TITLE = "Private event";
+
     public EventDetailsDisplayState? SelectedEventDetails => _selectedEventDetails;
 
     public bool IsOpen => SelectedEventDetails is not null;
@@ -24,6 +26,8 @@ public sealed class MainWindowEventDetailsState : ObservableObject
             ? "Join Google Meet"
             : "Open meeting link";
 
+    public bool IsPrivacyModeEnabled => _isPrivacyModeEnabled;
+
     /// <summary>
     /// Updates the signed-in Google account email used to build account-aware meeting links.
     /// </summary>
@@ -40,7 +44,7 @@ public sealed class MainWindowEventDetailsState : ObservableObject
         }
 
         _googleAccountEmail = normalizedEmailAddress;
-        SetSelectedEventDetails(BuildAccountAwareDetails(_selectedEventDetails));
+        SetSelectedEventDetails(BuildVisibleDetails());
     }
 
     /// <summary>
@@ -56,13 +60,42 @@ public sealed class MainWindowEventDetailsState : ObservableObject
             _ => null
         };
 
-        SetSelectedEventDetails(BuildAccountAwareDetails(details));
+        _sourceSelectedEventDetails = details;
+        SetSelectedEventDetails(BuildVisibleDetails());
     }
 
     /// <summary>
     /// Closes the details overlay.
     /// </summary>
-    public void Close() => SetSelectedEventDetails(null);
+    public void Close()
+    {
+        _sourceSelectedEventDetails = null;
+        SetSelectedEventDetails(null);
+    }
+
+    /// <summary>
+    /// Updates whether sensitive selected-event details should be hidden.
+    /// </summary>
+    /// <param name="isPrivacyModeEnabled">Whether sensitive details should be hidden.</param>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool SetPrivacyModeEnabled(bool isPrivacyModeEnabled)
+    {
+        if (!SetProperty(ref _isPrivacyModeEnabled, isPrivacyModeEnabled, nameof(IsPrivacyModeEnabled)))
+        {
+            return false;
+        }
+
+        SetSelectedEventDetails(BuildVisibleDetails());
+        return true;
+    }
+
+    private EventDetailsDisplayState? BuildVisibleDetails()
+    {
+        var accountAwareDetails = BuildAccountAwareDetails(_sourceSelectedEventDetails);
+        return IsPrivacyModeEnabled
+            ? RedactDetails(accountAwareDetails)
+            : accountAwareDetails;
+    }
 
     private EventDetailsDisplayState? BuildAccountAwareDetails(EventDetailsDisplayState? details)
     {
@@ -76,6 +109,19 @@ public sealed class MainWindowEventDetailsState : ObservableObject
             ? details
             : details with { JoinUrl = accountAwareJoinUrl };
     }
+
+    private static EventDetailsDisplayState? RedactDetails(EventDetailsDisplayState? details) =>
+        details is null
+            ? null
+            : details with
+            {
+                Title = PRIVATE_EVENT_TITLE,
+                LeadingIcon = string.Empty,
+                Organizer = null,
+                Description = null,
+                JoinUrl = null,
+                Participants = []
+            };
 
     private static Uri? BuildAccountAwareJoinUrl(Uri? joinUrl, string? emailAddress)
     {
@@ -170,6 +216,8 @@ public sealed class MainWindowEventDetailsState : ObservableObject
     }
 
     private EventDetailsDisplayState? _selectedEventDetails;
+    private EventDetailsDisplayState? _sourceSelectedEventDetails;
     private string? _googleAccountEmail;
+    private bool _isPrivacyModeEnabled;
     private const string AUTHUSER_PARAMETER_NAME = "authuser";
 }

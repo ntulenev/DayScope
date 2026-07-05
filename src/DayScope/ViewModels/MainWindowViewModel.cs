@@ -20,6 +20,7 @@ public sealed class MainWindowViewModel : IDisposable
             inbox,
             secondaryTimeZonePreferenceStore: null,
             calendarZoomPreferenceStore: null,
+            privacyModePreferenceStore: null,
             throwOnNullPreferenceStore: false)
     {
     }
@@ -39,6 +40,7 @@ public sealed class MainWindowViewModel : IDisposable
             inbox,
             secondaryTimeZonePreferenceStore,
             calendarZoomPreferenceStore: null,
+            privacyModePreferenceStore: null,
             throwOnNullPreferenceStore: true,
             throwOnNullCalendarZoomPreferenceStore: false)
     {
@@ -61,8 +63,36 @@ public sealed class MainWindowViewModel : IDisposable
             inbox,
             secondaryTimeZonePreferenceStore,
             calendarZoomPreferenceStore,
+            privacyModePreferenceStore: null,
             throwOnNullPreferenceStore: true,
-            throwOnNullCalendarZoomPreferenceStore: true)
+            throwOnNullCalendarZoomPreferenceStore: true,
+            throwOnNullPrivacyModePreferenceStore: false)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
+    /// </summary>
+    /// <param name="dashboardCoordinator">The coordinator used to refresh and navigate the dashboard.</param>
+    /// <param name="inbox">The inbox state shown by the main window.</param>
+    /// <param name="secondaryTimeZonePreferenceStore">The store used to persist secondary-time-zone visibility.</param>
+    /// <param name="calendarZoomPreferenceStore">The store used to persist calendar body zoom.</param>
+    /// <param name="privacyModePreferenceStore">The store used to persist privacy-mode visibility.</param>
+    public MainWindowViewModel(
+        MainWindowDashboardCoordinator dashboardCoordinator,
+        MainWindowInboxState inbox,
+        ISecondaryTimeZonePreferenceStore secondaryTimeZonePreferenceStore,
+        ICalendarZoomPreferenceStore calendarZoomPreferenceStore,
+        IPrivacyModePreferenceStore privacyModePreferenceStore)
+        : this(
+            dashboardCoordinator,
+            inbox,
+            secondaryTimeZonePreferenceStore,
+            calendarZoomPreferenceStore,
+            privacyModePreferenceStore,
+            throwOnNullPreferenceStore: true,
+            throwOnNullCalendarZoomPreferenceStore: true,
+            throwOnNullPrivacyModePreferenceStore: true)
     {
     }
 
@@ -71,8 +101,10 @@ public sealed class MainWindowViewModel : IDisposable
         MainWindowInboxState inbox,
         ISecondaryTimeZonePreferenceStore? secondaryTimeZonePreferenceStore,
         ICalendarZoomPreferenceStore? calendarZoomPreferenceStore,
+        IPrivacyModePreferenceStore? privacyModePreferenceStore,
         bool throwOnNullPreferenceStore = false,
-        bool throwOnNullCalendarZoomPreferenceStore = false)
+        bool throwOnNullCalendarZoomPreferenceStore = false,
+        bool throwOnNullPrivacyModePreferenceStore = false)
     {
         ArgumentNullException.ThrowIfNull(dashboardCoordinator);
         ArgumentNullException.ThrowIfNull(inbox);
@@ -86,12 +118,18 @@ public sealed class MainWindowViewModel : IDisposable
             ArgumentNullException.ThrowIfNull(calendarZoomPreferenceStore);
         }
 
+        if (throwOnNullPrivacyModePreferenceStore)
+        {
+            ArgumentNullException.ThrowIfNull(privacyModePreferenceStore);
+        }
+
         _dashboardCoordinator = dashboardCoordinator;
         Schedule = new MainWindowScheduleState();
         Inbox = inbox;
         EventDetails = new MainWindowEventDetailsState();
         _secondaryTimeZonePreferenceStore = secondaryTimeZonePreferenceStore;
         _calendarZoomPreferenceStore = calendarZoomPreferenceStore;
+        _privacyModePreferenceStore = privacyModePreferenceStore;
 
         if (_secondaryTimeZonePreferenceStore is not null)
         {
@@ -101,6 +139,11 @@ public sealed class MainWindowViewModel : IDisposable
         if (_calendarZoomPreferenceStore is not null)
         {
             Schedule.SetCalendarZoomScale(_calendarZoomPreferenceStore.LoadCalendarZoomScale());
+        }
+
+        if (_privacyModePreferenceStore is not null)
+        {
+            ApplyPrivacyMode(_privacyModePreferenceStore.LoadPrivacyModeEnabled());
         }
 
         _dashboardCoordinator.DisplayStateChanged += OnDisplayStateChanged;
@@ -253,6 +296,28 @@ public sealed class MainWindowViewModel : IDisposable
     }
 
     /// <summary>
+    /// Updates and persists whether sensitive schedule and email details should be hidden.
+    /// </summary>
+    /// <param name="isPrivacyModeEnabled">Whether sensitive details should be hidden.</param>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool SetPrivacyModeEnabled(bool isPrivacyModeEnabled)
+    {
+        if (!ApplyPrivacyMode(isPrivacyModeEnabled))
+        {
+            return false;
+        }
+
+        _privacyModePreferenceStore?.SavePrivacyModeEnabled(isPrivacyModeEnabled);
+        return true;
+    }
+
+    /// <summary>
+    /// Toggles whether sensitive schedule and email details should be hidden.
+    /// </summary>
+    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
+    public bool TogglePrivacyMode() => SetPrivacyModeEnabled(!Schedule.IsPrivacyModeEnabled);
+
+    /// <summary>
     /// Stops the background timers owned by the view model.
     /// </summary>
     public void Dispose()
@@ -274,7 +339,16 @@ public sealed class MainWindowViewModel : IDisposable
         EventDetails.ApplyGoogleAccountEmail(Inbox.GoogleAccountEmail);
     }
 
+    private bool ApplyPrivacyMode(bool isPrivacyModeEnabled)
+    {
+        var changed = Schedule.SetPrivacyModeEnabled(isPrivacyModeEnabled);
+        changed = Inbox.SetPrivacyModeEnabled(isPrivacyModeEnabled) || changed;
+        changed = EventDetails.SetPrivacyModeEnabled(isPrivacyModeEnabled) || changed;
+        return changed;
+    }
+
     private readonly MainWindowDashboardCoordinator _dashboardCoordinator;
     private readonly ISecondaryTimeZonePreferenceStore? _secondaryTimeZonePreferenceStore;
     private readonly ICalendarZoomPreferenceStore? _calendarZoomPreferenceStore;
+    private readonly IPrivacyModePreferenceStore? _privacyModePreferenceStore;
 }

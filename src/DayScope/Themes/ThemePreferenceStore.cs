@@ -10,7 +10,8 @@ namespace DayScope.Themes;
 public sealed class ThemePreferenceStore :
     IThemePreferenceStore,
     ISecondaryTimeZonePreferenceStore,
-    ICalendarZoomPreferenceStore
+    ICalendarZoomPreferenceStore,
+    IPrivacyModePreferenceStore
 {
     private const double MINIMUM_CALENDAR_ZOOM_SCALE = 0.85;
     private const double MAXIMUM_CALENDAR_ZOOM_SCALE = 1.15;
@@ -34,7 +35,8 @@ public sealed class ThemePreferenceStore :
         {
             ThemeMode = themeMode,
             ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone,
-            CalendarZoomScale = existingPreferences.CalendarZoomScale
+            CalendarZoomScale = existingPreferences.CalendarZoomScale,
+            IsPrivacyModeEnabled = existingPreferences.IsPrivacyModeEnabled
         });
     }
 
@@ -55,7 +57,8 @@ public sealed class ThemePreferenceStore :
         {
             ThemeMode = existingPreferences.ThemeMode,
             ShowSecondaryTimeZone = showSecondaryTimeZone,
-            CalendarZoomScale = existingPreferences.CalendarZoomScale
+            CalendarZoomScale = existingPreferences.CalendarZoomScale,
+            IsPrivacyModeEnabled = existingPreferences.IsPrivacyModeEnabled
         });
     }
 
@@ -76,7 +79,30 @@ public sealed class ThemePreferenceStore :
         {
             ThemeMode = existingPreferences.ThemeMode,
             ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone,
-            CalendarZoomScale = NormalizeCalendarZoomScale(calendarZoomScale)
+            CalendarZoomScale = NormalizeCalendarZoomScale(calendarZoomScale),
+            IsPrivacyModeEnabled = existingPreferences.IsPrivacyModeEnabled
+        });
+    }
+
+    /// <summary>
+    /// Loads whether privacy mode should be enabled.
+    /// </summary>
+    /// <returns><see langword="true"/> when sensitive details should be hidden.</returns>
+    public bool LoadPrivacyModeEnabled() => ReadPreferences().IsPrivacyModeEnabled ?? false;
+
+    /// <summary>
+    /// Saves whether privacy mode should be enabled.
+    /// </summary>
+    /// <param name="isPrivacyModeEnabled">Whether sensitive details should be hidden.</param>
+    public void SavePrivacyModeEnabled(bool isPrivacyModeEnabled)
+    {
+        var existingPreferences = ReadPreferences();
+        WritePreferences(new ThemePreferencesDocument
+        {
+            ThemeMode = existingPreferences.ThemeMode,
+            ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone,
+            CalendarZoomScale = existingPreferences.CalendarZoomScale,
+            IsPrivacyModeEnabled = isPrivacyModeEnabled
         });
     }
 
