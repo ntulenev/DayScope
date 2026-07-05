@@ -586,6 +586,35 @@
                                                Text="Copy Schedule" />
                                 </Button>
 
+                                <Button Style="{StaticResource HeaderMenuPopupButtonStyle}"
+                                        ToolTip="Toggle privacy mode (Ctrl+Shift+P)"
+                                        Click="OnTogglePrivacyModeClick">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="18" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Path Width="10"
+                                              Height="8"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Stroke="{DynamicResource AccentDangerBrush}"
+                                              StrokeThickness="1.8"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Visibility="{Binding Schedule.IsPrivacyModeEnabled, Converter={StaticResource BoolToVisibilityConverter}}"
+                                              Data="M 1,4 L 4,7 L 9,1" />
+                                        <TextBlock Grid.Column="1"
+                                                   FontFamily="{StaticResource UiFont}"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   Text="Privacy mode" />
+                                    </Grid>
+                                </Button>
+
                                 <Border Padding="12,10,12,8">
                                     <Grid>
                                         <Grid.RowDefinitions>

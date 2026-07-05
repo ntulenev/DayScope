@@ -138,7 +138,15 @@ public partial class MainWindow : Window
     /// <param name="e">The key event arguments.</param>
     private void OnMainWindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (!CalendarZoomKeyboardShortcut.TryResolve(GetShortcutKey(e), Keyboard.Modifiers, out var action))
+        var shortcutKey = GetShortcutKey(e);
+        if (PrivacyModeKeyboardShortcut.IsToggle(shortcutKey, Keyboard.Modifiers))
+        {
+            _viewModel.TogglePrivacyMode();
+            e.Handled = true;
+            return;
+        }
+
+        if (!CalendarZoomKeyboardShortcut.TryResolve(shortcutKey, Keyboard.Modifiers, out var action))
         {
             return;
         }
@@ -287,6 +295,17 @@ public partial class MainWindow : Window
     {
         CloseHeaderMenu();
         _ = CopyScheduleToClipboard();
+    }
+
+    /// <summary>
+    /// Toggles privacy mode from the in-window settings menu.
+    /// </summary>
+    /// <param name="sender">The event sender.</param>
+    /// <param name="e">The routed event arguments.</param>
+    private void OnTogglePrivacyModeClick(object sender, RoutedEventArgs e)
+    {
+        CloseHeaderMenu();
+        _viewModel.TogglePrivacyMode();
     }
 
     /// <summary>

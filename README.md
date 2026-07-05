@@ -21,6 +21,7 @@ The app is designed to stay out of the way: it starts as a small desktop compani
 - Event detail actions to open or copy meeting links
 - Limited HTML rendering in event descriptions with clickable links
 - Secondary time zone column
+- Privacy mode to hide event titles, event details, and unread email counts during screen sharing
 - Smooth animated vertical scrolling in the schedule and event-details panel
 - Configurable schedule hours, window size, and refresh interval
 - System tray integration with manual refresh
@@ -136,6 +137,7 @@ Dark Pink theme main window
 - Click any event card to open event details.
 - Use event detail actions to open or copy meeting links.
 - Use `Zoom` in the header menu to scale only the calendar body from 85% to 115%; `-` and `+` change it by 1%, the slider allows fine tuning, and clicking the percentage resets it to 100%.
+- Use `Privacy mode` in the header menu or press `Ctrl+Shift+P` to hide sensitive event and email details.
 
 ## Tray Behavior
 
