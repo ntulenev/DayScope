@@ -1,4 +1,5 @@
 using DayScope.Application.DaySchedule;
+using DayScope.Policies;
 
 namespace DayScope.ViewModels;
 
@@ -7,8 +8,6 @@ namespace DayScope.ViewModels;
 /// </summary>
 public sealed class MainWindowEventDetailsState : ObservableObject
 {
-    private const string PRIVATE_EVENT_TITLE = "Private event";
-
     public EventDetailsDisplayState? SelectedEventDetails => _selectedEventDetails;
 
     public bool IsOpen => SelectedEventDetails is not null;
@@ -93,7 +92,7 @@ public sealed class MainWindowEventDetailsState : ObservableObject
     {
         var accountAwareDetails = BuildAccountAwareDetails(_sourceSelectedEventDetails);
         return IsPrivacyModeEnabled
-            ? RedactDetails(accountAwareDetails)
+            ? EventPrivacyRedactor.RedactDetailsOrDefault(accountAwareDetails)
             : accountAwareDetails;
     }
 
@@ -109,19 +108,6 @@ public sealed class MainWindowEventDetailsState : ObservableObject
             ? details
             : details with { JoinUrl = accountAwareJoinUrl };
     }
-
-    private static EventDetailsDisplayState? RedactDetails(EventDetailsDisplayState? details) =>
-        details is null
-            ? null
-            : details with
-            {
-                Title = PRIVATE_EVENT_TITLE,
-                LeadingIcon = string.Empty,
-                Organizer = null,
-                Description = null,
-                JoinUrl = null,
-                Participants = []
-            };
 
     private static Uri? BuildAccountAwareJoinUrl(Uri? joinUrl, string? emailAddress)
     {

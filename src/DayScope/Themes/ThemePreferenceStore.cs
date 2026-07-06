@@ -2,6 +2,8 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using DayScope.Policies;
+
 namespace DayScope.Themes;
 
 /// <summary>
@@ -13,9 +15,6 @@ public sealed class ThemePreferenceStore :
     ICalendarZoomPreferenceStore,
     IPrivacyModePreferenceStore
 {
-    private const double MINIMUM_CALENDAR_ZOOM_SCALE = 0.85;
-    private const double MAXIMUM_CALENDAR_ZOOM_SCALE = 1.15;
-
     /// <summary>
     /// Loads the last saved theme mode.
     /// </summary>
@@ -66,7 +65,8 @@ public sealed class ThemePreferenceStore :
     /// Loads the persisted calendar zoom scale.
     /// </summary>
     /// <returns>The saved zoom scale, or 1 when no preference is available.</returns>
-    public double LoadCalendarZoomScale() => NormalizeCalendarZoomScale(ReadPreferences().CalendarZoomScale ?? 1);
+    public double LoadCalendarZoomScale() =>
+        CalendarZoomPolicy.Normalize(ReadPreferences().CalendarZoomScale ?? CalendarZoomPolicy.DEFAULT_SCALE);
 
     /// <summary>
     /// Saves the calendar zoom scale.
@@ -79,7 +79,7 @@ public sealed class ThemePreferenceStore :
         {
             ThemeMode = existingPreferences.ThemeMode,
             ShowSecondaryTimeZone = existingPreferences.ShowSecondaryTimeZone,
-            CalendarZoomScale = NormalizeCalendarZoomScale(calendarZoomScale),
+            CalendarZoomScale = CalendarZoomPolicy.Normalize(calendarZoomScale),
             IsPrivacyModeEnabled = existingPreferences.IsPrivacyModeEnabled
         });
     }
@@ -139,11 +139,6 @@ public sealed class ThemePreferenceStore :
             // Ignore persistence failures and keep the app usable.
         }
     }
-
-    private static double NormalizeCalendarZoomScale(double calendarZoomScale) =>
-        Math.Round(
-            Math.Clamp(calendarZoomScale, MINIMUM_CALENDAR_ZOOM_SCALE, MAXIMUM_CALENDAR_ZOOM_SCALE),
-            2);
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {

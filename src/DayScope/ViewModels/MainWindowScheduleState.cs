@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 
 using DayScope.Application.DaySchedule;
+using DayScope.Policies;
 
 namespace DayScope.ViewModels;
 
@@ -10,11 +11,6 @@ namespace DayScope.ViewModels;
 /// </summary>
 public sealed class MainWindowScheduleState : ObservableObject
 {
-    private const double MINIMUM_CALENDAR_ZOOM_SCALE = 0.85;
-    private const double MAXIMUM_CALENDAR_ZOOM_SCALE = 1.15;
-    private const double CALENDAR_ZOOM_STEP = 0.01;
-    private const string PRIVATE_EVENT_TITLE = "Private event";
-
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindowScheduleState"/> class.
     /// </summary>
@@ -82,7 +78,7 @@ public sealed class MainWindowScheduleState : ObservableObject
         set => SetCalendarZoomScale(value);
     }
 
-    public string CalendarZoomPercentText => $"{(int)Math.Round(CalendarZoomScale * 100)}%";
+    public string CalendarZoomPercentText => CalendarZoomPolicy.FormatPercent(CalendarZoomScale);
 
     public bool IsPrivacyModeEnabled => _isPrivacyModeEnabled;
 
@@ -132,11 +128,11 @@ public sealed class MainWindowScheduleState : ObservableObject
         return true;
     }
 
-    public bool IncreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomScale + CALENDAR_ZOOM_STEP);
+    public bool IncreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomPolicy.Increase(CalendarZoomScale));
 
-    public bool DecreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomScale - CALENDAR_ZOOM_STEP);
+    public bool DecreaseCalendarZoom() => SetCalendarZoomScale(CalendarZoomPolicy.Decrease(CalendarZoomScale));
 
-    public bool ResetCalendarZoom() => SetCalendarZoomScale(1);
+    public bool ResetCalendarZoom() => SetCalendarZoomScale(CalendarZoomPolicy.DEFAULT_SCALE);
 
     /// <summary>
     /// Updates whether sensitive event details should be hidden in the schedule UI.
@@ -202,10 +198,10 @@ public sealed class MainWindowScheduleState : ObservableObject
     private void ApplyVisibleCollections(DayScheduleDisplayState state)
     {
         IReadOnlyList<AllDayEventDisplayState> allDayEvents = IsPrivacyModeEnabled
-            ? [.. state.AllDayEvents.Select(RedactAllDayEvent)]
+            ? [.. state.AllDayEvents.Select(EventPrivacyRedactor.RedactAllDayEvent)]
             : state.AllDayEvents;
         IReadOnlyList<TimedEventDisplayState> timedEvents = IsPrivacyModeEnabled
-            ? [.. state.TimedEvents.Select(RedactTimedEvent)]
+            ? [.. state.TimedEvents.Select(EventPrivacyRedactor.RedactTimedEvent)]
             : state.TimedEvents;
 
         ReplaceCollection(_primaryTimelineHoursSource, state.PrimaryTimelineHours);
@@ -214,38 +210,9 @@ public sealed class MainWindowScheduleState : ObservableObject
         ReplaceCollection(_timedEventsSource, timedEvents);
     }
 
-    private static AllDayEventDisplayState RedactAllDayEvent(AllDayEventDisplayState eventState) =>
-        eventState with
-        {
-            Title = PRIVATE_EVENT_TITLE,
-            LeadingIcon = string.Empty,
-            Details = RedactEventDetails(eventState.Details)
-        };
-
-    private static TimedEventDisplayState RedactTimedEvent(TimedEventDisplayState eventState) =>
-        eventState with
-        {
-            Title = PRIVATE_EVENT_TITLE,
-            LeadingIcon = string.Empty,
-            Details = RedactEventDetails(eventState.Details)
-        };
-
-    private static EventDetailsDisplayState RedactEventDetails(EventDetailsDisplayState details) =>
-        details with
-        {
-            Title = PRIVATE_EVENT_TITLE,
-            LeadingIcon = string.Empty,
-            Organizer = null,
-            Description = null,
-            JoinUrl = null,
-            Participants = []
-        };
-
     public bool SetCalendarZoomScale(double zoomScale)
     {
-        var normalizedZoomScale = Math.Round(
-            Math.Clamp(zoomScale, MINIMUM_CALENDAR_ZOOM_SCALE, MAXIMUM_CALENDAR_ZOOM_SCALE),
-            2);
+        var normalizedZoomScale = CalendarZoomPolicy.Normalize(zoomScale);
 
         if (!SetProperty(ref _calendarZoomScale, normalizedZoomScale, nameof(CalendarZoomScale)))
         {
@@ -263,5 +230,5 @@ public sealed class MainWindowScheduleState : ObservableObject
     private DayScheduleDisplayState? _sourceState;
     private bool _showSecondaryTimeZone = true;
     private bool _isPrivacyModeEnabled;
-    private double _calendarZoomScale = 1;
+    private double _calendarZoomScale = CalendarZoomPolicy.DEFAULT_SCALE;
 }
