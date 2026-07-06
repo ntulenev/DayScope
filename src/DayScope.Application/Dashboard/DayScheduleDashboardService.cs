@@ -107,42 +107,28 @@ public sealed class DayScheduleDashboardService
         double? availableScheduleWidth,
         CancellationToken cancellationToken)
     {
-        if (_isRefreshing)
+        var requestedDate = _selectedDate;
+        var loadResult = await _calendarService.GetEventsForDateAsync(
+            requestedDate,
+            _localTimeZone,
+            interactionMode,
+            cancellationToken);
+        if (requestedDate != _selectedDate)
         {
             return GetCurrentDisplayState(availableScheduleWidth);
         }
 
-        _isRefreshing = true;
+        _lastLoadResult = ShouldReuseLastSuccessfulAgenda(loadResult)
+            ? new CalendarLoadResult(_lastSuccessfulLoadResult!.Agenda, CalendarLoadStatus.Unavailable)
+            : loadResult;
 
-        try
+        if (loadResult.Status is CalendarLoadStatus.Success or CalendarLoadStatus.NoEvents)
         {
-            var requestedDate = _selectedDate;
-            var loadResult = await _calendarService.GetEventsForDateAsync(
-                requestedDate,
-                _localTimeZone,
-                interactionMode,
-                cancellationToken);
-            if (requestedDate != _selectedDate)
-            {
-                return GetCurrentDisplayState(availableScheduleWidth);
-            }
-
-            _lastLoadResult = ShouldReuseLastSuccessfulAgenda(loadResult)
-                ? new CalendarLoadResult(_lastSuccessfulLoadResult!.Agenda, CalendarLoadStatus.Unavailable)
-                : loadResult;
-
-            if (loadResult.Status is CalendarLoadStatus.Success or CalendarLoadStatus.NoEvents)
-            {
-                _lastSuccessfulLoadResult = loadResult;
-                _lastSuccessfulDate = _selectedDate;
-            }
-
-            return GetCurrentDisplayState(availableScheduleWidth);
+            _lastSuccessfulLoadResult = loadResult;
+            _lastSuccessfulDate = _selectedDate;
         }
-        finally
-        {
-            _isRefreshing = false;
-        }
+
+        return GetCurrentDisplayState(availableScheduleWidth);
     }
 
     private bool ShouldReuseLastSuccessfulAgenda(CalendarLoadResult loadResult)
@@ -168,5 +154,4 @@ public sealed class DayScheduleDashboardService
     private CalendarLoadResult? _lastSuccessfulLoadResult;
     private DateOnly? _lastSuccessfulDate;
     private DateOnly _selectedDate;
-    private bool _isRefreshing;
 }

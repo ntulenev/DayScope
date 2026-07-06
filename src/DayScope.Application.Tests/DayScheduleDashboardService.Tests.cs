@@ -118,56 +118,6 @@ public sealed class DayScheduleDashboardServiceTests
         state.ShowStatus.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Refreshing while another refresh is already running returns the current display state.")]
-    [Trait("Category", "Unit")]
-    public async Task RefreshCalendarAsyncShouldReturnCurrentDisplayStateWhenRefreshIsAlreadyRunning()
-    {
-        // Arrange
-        var now = new DateTimeOffset(2026, 4, 14, 9, 0, 0, TimeSpan.Zero);
-        using var cancellationTokenSource = new CancellationTokenSource();
-        var token = cancellationTokenSource.Token;
-        var refreshCompletionSource = new TaskCompletionSource<CalendarLoadResult>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        var getEventsCalls = 0;
-        var clockService = new Mock<IClockService>(MockBehavior.Strict);
-        clockService.SetupGet(service => service.Now)
-            .Returns(now);
-        var calendarService = new Mock<ICalendarService>(MockBehavior.Strict);
-        calendarService.Setup(service => service.GetEventsForDateAsync(
-                new DateOnly(2026, 4, 14),
-                TimeZoneInfo.Utc,
-                CalendarInteractionMode.Interactive,
-                token))
-            .Callback(() => getEventsCalls++)
-            .Returns(refreshCompletionSource.Task);
-        var localTimeZoneProvider = new Mock<ILocalTimeZoneProvider>(MockBehavior.Strict);
-        localTimeZoneProvider.SetupGet(provider => provider.LocalTimeZone)
-            .Returns(TimeZoneInfo.Utc);
-        var service = CreateService(
-            clockService.Object,
-            calendarService.Object,
-            localTimeZoneProvider.Object);
-        var firstRefresh = service.RefreshCalendarAsync(
-            CalendarInteractionMode.Interactive,
-            600,
-            token);
-
-        // Act
-        var state = await service.RefreshCalendarAsync(
-            CalendarInteractionMode.Interactive,
-            620,
-            token);
-
-        // Assert
-        state.DisplayDate.Should().Be(new DateOnly(2026, 4, 14));
-        state.StatusText.Should().Be("Loading today's schedule...");
-        state.ScheduleCanvasWidth.Should().Be(620);
-        getEventsCalls.Should().Be(1);
-
-        refreshCompletionSource.SetResult(CalendarLoadResult.FromStatus(CalendarLoadStatus.NoEvents));
-        await firstRefresh;
-    }
-
     [Fact(DisplayName = "Refreshing keeps the last successful agenda visible when the network is temporarily unavailable.")]
     [Trait("Category", "Unit")]
     public async Task RefreshCalendarAsyncShouldKeepTheLastSuccessfulAgendaWhenNetworkIsUnavailable()

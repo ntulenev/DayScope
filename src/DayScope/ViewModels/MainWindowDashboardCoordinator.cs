@@ -57,7 +57,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// <returns>A task that completes when initialization has finished.</returns>
     public async Task InitializeAsync()
     {
-        if (_isInitialized)
+        if (_isDisposed || _isInitialized)
         {
             return;
         }
@@ -78,13 +78,17 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// Triggers an interactive dashboard refresh.
     /// </summary>
     /// <returns>A task that completes when the refresh has finished.</returns>
-    public Task RefreshNowAsync() => RefreshDashboardAsync(CalendarInteractionMode.Interactive);
+    public Task RefreshNowAsync() =>
+        _isDisposed ? Task.CompletedTask : RefreshDashboardAsync(CalendarInteractionMode.Interactive);
 
     /// <summary>
     /// Checks whether the local day changed while the app was idle and refreshes the selected day when needed.
     /// </summary>
     /// <returns>A task that returns <see langword="true"/> when the selected date changed.</returns>
-    public Task<bool> RefreshCurrentDateIfChangedAsync() => RefreshCurrentDateIfChangedAsync(publishUnchangedState: false);
+    public Task<bool> RefreshCurrentDateIfChangedAsync() =>
+        _isDisposed
+            ? Task.FromResult(false)
+            : RefreshCurrentDateIfChangedAsync(publishUnchangedState: false);
 
     /// <summary>
     /// Moves the selected schedule date by the provided number of days.
@@ -93,7 +97,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// <returns>A task that completes when navigation and refresh are finished.</returns>
     public async Task NavigateDaysAsync(int dayOffset)
     {
-        if (dayOffset == 0)
+        if (_isDisposed || dayOffset == 0)
         {
             return;
         }
@@ -109,6 +113,11 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// <param name="availableScheduleWidth">The width available to the schedule canvas.</param>
     public void UpdateAvailableScheduleWidth(double availableScheduleWidth)
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
         var normalizedWidth = Math.Max(420, Math.Floor(availableScheduleWidth));
         if (Math.Abs(_availableScheduleWidth - normalizedWidth) < 1)
         {
@@ -124,10 +133,17 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
     /// </summary>
     public void Dispose()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _isDisposed = true;
         _clockTimer.Tick -= OnClockTimerTickAsync;
         _calendarTimer.Tick -= OnCalendarTimerTickAsync;
         _clockTimer.StopTimer();
         _calendarTimer.StopTimer();
+        DisposeRefreshGateIfIdle();
     }
 
     private bool ShouldRunBackgroundRefresh =>
@@ -146,7 +162,7 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
             _lastObservedCurrentDate = currentLocalDate;
             _dashboardService.TrySelectCurrentDate();
 
-            if (_isRefreshing)
+            if (IsRefreshInProgress)
             {
                 _pendingCurrentDateRefresh = true;
                 PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
@@ -172,18 +188,34 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
 
     private async Task RefreshDashboardAsync(CalendarInteractionMode interactionMode)
     {
-        if (_isRefreshing)
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        if (!_refreshGate.Wait(0))
         {
             PublishDisplayState(_dashboardService.GetCurrentDisplayState(_availableScheduleWidth));
             return;
         }
 
-        _isRefreshing = true;
+        try
+        {
+            await RefreshDashboardCoreAsync(interactionMode);
+        }
+        finally
+        {
+            _refreshGate.Release();
+        }
+    }
+
+    private async Task RefreshDashboardCoreAsync(CalendarInteractionMode interactionMode)
+    {
         _calendarTimer.StopTimer();
 
         try
         {
-            while (true)
+            do
             {
                 _pendingCurrentDateRefresh = false;
 
@@ -196,18 +228,13 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
                     interactionMode == CalendarInteractionMode.Interactive,
                     _applicationLifetime.ApplicationStopping));
 
-                if (!_pendingCurrentDateRefresh)
-                {
-                    break;
-                }
-
                 interactionMode = CalendarInteractionMode.Background;
             }
+            while (_pendingCurrentDateRefresh);
         }
         finally
         {
-            _isRefreshing = false;
-            if (ShouldRunBackgroundRefresh && _isInitialized)
+            if (!_isDisposed && ShouldRunBackgroundRefresh && _isInitialized)
             {
                 _calendarTimer.StartTimer();
             }
@@ -228,14 +255,28 @@ public sealed class MainWindowDashboardCoordinator : IDisposable
         InboxSnapshotChanged?.Invoke(this, new EmailInboxSnapshotChangedEventArgs(snapshot));
     }
 
+    private void DisposeRefreshGateIfIdle()
+    {
+        if (!_refreshGate.Wait(0))
+        {
+            return;
+        }
+
+        _refreshGate.Release();
+        _refreshGate.Dispose();
+    }
+
     private readonly IDayScheduleDashboardService _dashboardService;
     private readonly IEmailInboxService _emailInboxService;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly IUiDispatcherTimer _clockTimer;
     private readonly IUiDispatcherTimer _calendarTimer;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private double _availableScheduleWidth = 860;
     private bool _isInitialized;
-    private bool _isRefreshing;
+    private bool _isDisposed;
     private bool _pendingCurrentDateRefresh;
     private DateOnly? _lastObservedCurrentDate;
+
+    private bool IsRefreshInProgress => _refreshGate.CurrentCount == 0;
 }

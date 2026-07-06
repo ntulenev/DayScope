@@ -631,7 +631,7 @@ public sealed class MainWindowViewModelTests
         viewModel.Schedule.DisplayDate.Should().Be(initialState.DisplayDate);
         timers.ClockTimer.StopCalls.Should().Be(1);
         timers.CalendarTimer.StopCalls.Should().BeGreaterThanOrEqualTo(1);
-        dashboardService.RefreshCalls.Should().Be(2);
+        dashboardService.RefreshCalls.Should().Be(1);
     }
 
     private static MainWindowDashboardCoordinator CreateCoordinator(
